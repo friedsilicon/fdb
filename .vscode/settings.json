@@ -1,0 +1,12 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "cmake.buildDirectory": "${workspaceRoot}/../vsc-build",
+    "cmake.installPrefix": "${workspaceRoot}/../vsc-install",
+    "cmake.generator": "Ninja",
+    "cmake.configureEnvironment": {
+        "CPPUTEST_DIR": "/usr/local/Cellar/cpputest/3.8/"
+    },
+    "cmake.configureArgs": [
+       "-DWITH_COVERAGE=ON"
+    ]
+}

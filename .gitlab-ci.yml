@@ -1,0 +1,37 @@
+stages: 
+  - build
+  - pages
+
+variables: 
+  CPPUTEST_HOME: /usr/
+
+build: 
+  image: vshivanand/alpine-cpp-build:latest
+  artifacts: 
+    paths: 
+      - build/
+  before_script: 
+    - git submodule sync
+    - git submodule update --init --recursive
+  script: 
+    - mkdir build
+    - cd build
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_COVERAGE=ON ..
+    - make VERBOSE=1 && make coverage VERBOSE=1
+  stage: build
+
+pages:
+  image: alpine:latest
+  before_script: []
+  stage: pages
+  dependencies:
+    - build
+  when: on_success
+  script:
+    - mkdir public/
+    - mv build/coverage-report-test-fdb public/coverage
+  artifacts:
+    paths:
+      - public
+  only:
+    - master

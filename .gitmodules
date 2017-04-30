@@ -1,0 +1,7 @@
+[submodule "cmake_modules"]
+	path = cmake_modules
+	url = https://github.com/shiva/cmake-bootstrap.git
+[submodule "libdict"]
+	path = libdict
+	url = https://github.com/shiva/libdict.git
+	branch = release-fdb

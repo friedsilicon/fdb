@@ -1,0 +1,30 @@
+---
+# We'll use defaults from the Mozilla style, but don't touch the includes
+BasedOnStyle: Mozilla
+SortIncludes: false
+IndentWidth: 4
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: true
+    AfterControlStatement: false
+    AfterEnum: false
+    AfterFunction: true
+    AfterNamespace: true
+    AfterObjCDeclaration: true
+    AfterStruct: true
+    AfterUnion: true
+    BeforeCatch: false
+    BeforeElse: false
+    IndentBraces: false
+---
+Language: Cpp
+# Force pointers to the type for C++.
+DerivePointerAlignment: false
+PointerAlignment: Left
+SpaceAfterCStyleCast: true
+ReflowComments: true
+AlignConsecutiveDeclarations: true
+---
+Language: JavaScript
+# Use 100 columns for JS.
+ColumnLimit: 100
