@@ -21,13 +21,6 @@ build:
     - make VERBOSE=1 && make coverage VERBOSE=1
   stage: build
 
-github-mirror:
-  image: vshivanand/alpine-cpp-build:latest
-  script: 
-    - git remote add origin https://${GH_TOKEN}@github.com/friedsilicon/fdb.git > /dev/null 2>&1
-    - git push -u origin ${CI_COMMIT_REF_NAME}
-  stage: publish
-
 coverage:
   image: alpine:latest
   before_script: []
