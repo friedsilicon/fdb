@@ -1,18 +1,19 @@
 stages: 
   - build
-  - pages
+  - publish 
 
 variables: 
   CPPUTEST_HOME: /usr/
 
+before_script: 
+  - git submodule sync
+  - git submodule update --init --recursive
+ 
 build: 
   image: vshivanand/alpine-cpp-build:latest
   artifacts: 
     paths: 
       - build/
-  before_script: 
-    - git submodule sync
-    - git submodule update --init --recursive
   script: 
     - mkdir build
     - cd build
@@ -20,10 +21,17 @@ build:
     - make VERBOSE=1 && make coverage VERBOSE=1
   stage: build
 
-pages:
+github-mirror:
+  image: vshivanand/alpine-cpp-build:latest
+  script: 
+    - git remote add origin https://${GH_TOKEN}@github.com/friedsilicon/fdb.git > /dev/null 2>&1
+    - git push -u origin ${CI_COMMIT_REF_NAME}
+  stage: publish
+
+coverage:
   image: alpine:latest
   before_script: []
-  stage: pages
+  stage: publish
   dependencies:
     - build
   when: on_success
