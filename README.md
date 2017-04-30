@@ -4,8 +4,8 @@ key-value store / db
 
 If you are using the version on github.com, you are using a [release-only mirror](https://github.com/friedsilicon/fdb). This project is developed and maintained at [friedsilicon/fdb ](https://gitlab.com/friedsilicon/fdb) on gitlab.com.
 
-[![build](https://gitlab.com/shivanand/fdb/badges/master/build.svg)](https://gitlab.com/shivanand/fdb/commits/master)
-[![coverage](https://gitlab.com/shivanand/fdb/badges/master/coverage.svg?job=build)](https://shivanand.gitlab.io/fdb/coverage/)
+[![build](https://gitlab.com/friedsilicon/fdb/badges/master/build.svg)](https://gitlab.com/friedsilicon/fdb/commits/master)
+[![coverage](https://gitlab.com/friedsilicon/fdb/badges/master/coverage.svg?job=build)](https://friedsilicon.gitlab.io/fdb/coverage/)
 [![Join the chat at https://gitter.im/shiva/fdb](https://badges.gitter.im/shiva/fdb.svg)](https://gitter.im/shiva/fdb?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Trello](http://res.cloudinary.com/shiva/image/upload/c_scale,w_80/v1478231913/trello-logo-blue_fy6esb.png)](https://trello.com/b/MmkbCOA2)
 
