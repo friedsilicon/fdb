@@ -2,7 +2,7 @@
 
 key-value store / db 
 
-If you are using the version on github.com, you are using a [release-only mirror](https://github.com/friedsilicon/fdb). This project is developed and maintained at [friedsilicon/fdb ](https://gitlab.com/friedsilicon/fdb) on gitlab.com.
+If you are using the version on github.com, you are using a [release-only mirror](https://github.com/friedsilicon/fdb). This project is developed and maintained at [friedsilicon/fdb](https://gitlab.com/friedsilicon/fdb) on gitlab.com.
 
 [![build](https://gitlab.com/friedsilicon/fdb/badges/master/build.svg)](https://gitlab.com/friedsilicon/fdb/commits/master)
 [![coverage](https://gitlab.com/friedsilicon/fdb/badges/master/coverage.svg?job=build)](https://friedsilicon.gitlab.io/fdb/coverage/)
@@ -22,7 +22,7 @@ To compile fdb, checkout this repo, initialize submodules and build, by executin
 
 Note: build directory should be a sibling of where fdb is checked out. Eclipse doesn't like out-of-source builds that is a child of the source directory
 
-    # git clone https://shiva@bitbucket.org/shiva/fdb.git fdb
+    # git clone https://gitlab.com/friedsilicon/fdb.git fdb
     # cd fdb && git submodule update --init --recursive
     # cd ..
     # mkdir build && cd build
