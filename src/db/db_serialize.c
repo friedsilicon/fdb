@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 
 #include "fdb_private.h"
 #include "fdb_log.h"
