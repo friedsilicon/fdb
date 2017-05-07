@@ -21,7 +21,7 @@ build:
     - make VERBOSE=1 && make coverage VERBOSE=1
   stage: build
 
-coverage:
+publish_cov_results:
   image: alpine:latest
   before_script: []
   stage: publish
