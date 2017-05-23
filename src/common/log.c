@@ -3,7 +3,7 @@
 #include "fdb_log.h"
 #include <stdbool.h>
 
-static bool debug_enabled = true;
+static bool debug_enabled = false;
 
 bool
 fdb_is_debug_enabled()
