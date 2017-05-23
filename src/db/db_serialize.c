@@ -18,7 +18,7 @@ struct fdb_file_s
 };
 
 static bool
-fdb_open(fdb db, const char* filename)
+fdb_file_open(fdb db, const char* filename)
 {
     assert(db);
     assert(filename);
@@ -45,13 +45,19 @@ fdb_open(fdb db, const char* filename)
 }
 
 void
-fdb_close(fdb db)
+fdb_file_close(fdb db)
 {
     if (db->file_on_disk->f) {
         fclose(db->file_on_disk->f);
         db->file_on_disk->f = NULL;
+    }
+
+    if (db->file_on_disk->name) {
         free(db->file_on_disk->name);
         db->file_on_disk->name = NULL;
+    }
+
+    if (db->file_on_disk) {
         free(db->file_on_disk);
         db->file_on_disk = NULL;
     }
@@ -76,22 +82,41 @@ fdb_save(fdb db, const char* filename)
     // cannot save if there are any active txn
     // cannot save if there are operations
 
-    if (!fdb_open(db, filename)) {
+    if (!fdb_file_open(db, filename)) {
         return false;
     }
 
     ret = fdb_save_to_file(db);
-    fdb_close(db);
+    fdb_file_close(db);
 
     return ret;
 }
 
 bool
+fdb_load_from_file(fdb db)
+{
+    return true;
+}
+
+bool
 fdb_load(fdb db, const char* filename)
 {
+    bool ret = false;
     if (!db || !filename) {
         return false;
     }
+
+    // cannot load if there are any active txn
+    // cannot load if there are operations
+    // cannot load if there is already data in the db?
+
+    if (!fdb_file_open(db, filename)) {
+        return false;
+    }
+
+    ret = fdb_load_from_file(db);
+    fdb_file_close(db);
+
 
     return true;
 }

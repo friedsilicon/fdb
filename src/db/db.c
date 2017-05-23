@@ -60,6 +60,8 @@ fdb_init_db(fdb db)
         case FDB_MULTI_INDEX_DB:
             db->idx_type = DB_MULTI_INDEX;
             break;
+        default:
+            return false;
     }
 
     return true;
