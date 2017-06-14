@@ -30,7 +30,7 @@ publish_cov_results:
   when: on_success
   script:
     - mkdir public/
-    - mv build/coverage-report-test-fdb public/coverage
+    - mv build/coverage-report-fdb public/coverage
   artifacts:
     paths:
       - public
