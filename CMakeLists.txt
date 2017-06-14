@@ -15,6 +15,7 @@ option(WITH_TESTS "Build tests (requires CppUTest)." OFF)
 if(WITH_COVERAGE)
 	set(WITH_TESTS ON)
 endif()
+include(UseCppUTest)
 
 # The version number
 set (fdb_VERSION_MAJOR 0)
