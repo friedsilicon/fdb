@@ -64,6 +64,10 @@ struct iter_
     fnode      next;
 };
 
+typedef struct {
+    traverse_cb callback;
+} fdb_traversal_functor_state;
+
 typedef enum tstate_e {
     TXN_ST_NEW,            /*! New and clean! */
     TXN_ST_LIVE,           /*! Live and in operation - not validated */

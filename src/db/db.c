@@ -43,6 +43,17 @@ finish_tx(ftx tx, fdb db)
     return true;
 }
 
+static bool 
+fdb_traverse_callback(void* state, const void* key, void* data)
+{
+    fdb_traversal_functor_state* fstate = NULL;
+    fstate = state;
+    assert(fstate);
+    assert(key);
+
+    return fstate->callback((fnode) data);
+}
+
 static fdb
 fdb_alloc()
 {
@@ -235,13 +246,6 @@ fdb_node_set_key(struct node_* node, const void* key)
     fdb_item_set_content(&node->key, key);
 }
 
-static void
-fdb_node_set_data(struct node_* node, const void* data)
-{
-    assert(node);
-    fdb_item_set_content(&node->data, data);
-}
-
 static fdb
 fdb_new(int id, const char* name, fdb_type_t type)
 {
@@ -430,6 +434,21 @@ fdb_find(fdb db, key key, size_t keysize)
     return dict_search(db->dstore, &item);
 }
 
+size_t fdb_traverse(fdb db, traverse_cb callback)
+{
+    dict_visit_functor          functor;
+    fdb_traversal_functor_state state;
+
+    assert(db);
+    assert(callback);
+
+    state.callback = callback;
+    functor.func = &fdb_traverse_callback;
+    functor.data = &state;
+
+    return dict_traverse_with_functor(db->dstore, &functor);
+}
+
 fiter
 fdb_iterate(fdb db)
 {
@@ -542,3 +561,11 @@ fnode_get_datasize(fnode node)
 
     return felem_get_size(&node->data);
 }
+
+void
+fdb_node_set_data(struct node_* node, data data)
+{
+    assert(node);
+    fdb_item_set_content(&node->data, data);
+}
+

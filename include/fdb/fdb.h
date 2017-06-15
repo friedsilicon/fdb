@@ -29,15 +29,20 @@ bool fdb_exists(fdb db, key key, size_t keysize);
 bool fdb_remove(fdb db, key key, size_t keysize);
 
 fnode fdb_find(fdb db, key key, size_t keysize);
-fiter fdb_iterate(fdb db);
 
+fiter fdb_iterate(fdb db);
 bool fiter_hasnext(fiter iter);
 fnode fiter_next(fiter iter);
+
+typedef bool (*traverse_cb)(fnode node);
+size_t fdb_traverse(fdb db, traverse_cb callback);
 
 key fnode_get_key(fnode node);
 size_t fnode_get_keysize(fnode node);
 data fnode_get_data(fnode node);
 size_t fnode_get_datasize(fnode node);
+
+void fdb_node_set_data(fnode node, const data data);
 
 /* txn api */
 ftx fdb_txn_start(fdb db);
