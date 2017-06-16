@@ -13,21 +13,20 @@ option(WITH_COVERAGE "Build with code coverage support (requires lcov and build 
 option(WITH_TESTS "Build tests (requires CppUTest)." OFF)
 
 if(WITH_COVERAGE)
-	set(WITH_TESTS ON)
+    set(WITH_TESTS ON)
     include(CodeCoverage)
     # Enable code coverage.
     # Build with debugging information to make the output meaningful.
     # Disable optimizations to get the most accurate results.
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -g -O0")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -g -O0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -g -O0")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -g -O0")
 
-    if (NOT TARGET coverage)
-        SETUP_TARGET_FOR_COVERAGE(
-            coverage
-            ctest
-            coverage-report-fdb
-			libdict/*)
-    endif()
+    add_coverage(
+        TARGET coverage
+        TESTRUNNER ctest
+        OUTPUTNAME coverage-report-fdb
+        EXCLUDE 'libdict*'
+    )
 else()
     message(STATUS "COVERAGE disabled. ")
 endif()
