@@ -108,14 +108,14 @@ fdb_set_name(fdb db, const char* name)
 static inline void
 fdb_item_print(struct felem* e, const char* prefix)
 {
-    FDB_DEBUG("%s [%lu, %s]", prefix, e->size, e->content);
+    FDB_INFO("%s [%lu, %s]", prefix, e->size, e->content);
 }
 
 static void
 fdb_node_print(struct node_* n)
 {
     if (n) {
-        FDB_DEBUG("node_p=%p", n);
+        FDB_INFO("node_p=%p", n);
         fdb_item_print(&n->key, "key");
         fdb_item_print(&n->data, "data");
     }
