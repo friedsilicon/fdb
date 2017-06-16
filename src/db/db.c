@@ -108,7 +108,7 @@ fdb_set_name(fdb db, const char* name)
 static inline void
 fdb_item_print(struct felem* e, const char* prefix)
 {
-    FDB_INFO("%s [%lu, %s]", prefix, e->size, e->content);
+    FDB_INFO("%s [%lu, %p]", prefix, e->size, e->content);
 }
 
 static void
