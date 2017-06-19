@@ -25,7 +25,7 @@ if(WITH_COVERAGE)
         TARGET coverage
         TESTRUNNER ctest
         OUTPUTNAME coverage-report-fdb
-        EXCLUDE 'libdict*'
+        EXCLUDE 'libdict/*'
     )
 else()
     message(STATUS "COVERAGE disabled. ")
