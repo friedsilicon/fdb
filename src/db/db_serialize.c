@@ -67,7 +67,7 @@ bool
 fdb_save_to_file(fdb db)
 {
 
-    return true;
+    return false;
 }
 
 bool
@@ -95,7 +95,7 @@ fdb_save(fdb db, const char* filename)
 bool
 fdb_load_from_file(fdb db)
 {
-    return true;
+    return false;
 }
 
 bool
@@ -117,6 +117,5 @@ fdb_load(fdb db, const char* filename)
     ret = fdb_load_from_file(db);
     fdb_file_close(db);
 
-
-    return true;
+    return ret;
 }
