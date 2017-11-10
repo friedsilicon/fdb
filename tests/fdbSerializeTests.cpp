@@ -42,19 +42,19 @@ TEST_GROUP(FdbSerializeGroup)
         kl = strlen(k);
         vl = strlen(v);
 
-        fnode n = fdb_find(db_inst, k, kl);
-        check_node(n, k, kl, v, vl);
+        fnode n = fdb_find(db_inst, k, kl+1);
+        check_node(n, k, kl+1, v, vl+1);
     }
 };
 // clang-format on
 
 TEST(FdbSerializeGroup, Save)
 {
-    CHECK(fdb_insert(db, "key1", 4, "data1", 5));
+    CHECK(fdb_insert(db, "key1", 5, "data1", 6));
     check_record(db, "key1", "data1");
-    CHECK(fdb_insert(db, "key2", 4, "data2", 5));
+    CHECK(fdb_insert(db, "key2", 5, "data2", 6));
     check_record(db, "key2", "data2");
-    CHECK(fdb_insert(db, "key3", 4, "data3", 5));
+    CHECK(fdb_insert(db, "key3", 5, "data3", 6));
     check_record(db, "key3", "data3");
 
     //CHECK(fdb_save(db, "./fdb-serialize.bin"));
@@ -63,9 +63,9 @@ TEST(FdbSerializeGroup, Save)
 
 TEST(FdbSerializeGroup, SaveLoad)
 {
-    CHECK(fdb_insert(db, "key1", 4, "data1", 5));
-    CHECK(fdb_insert(db, "key2", 4, "data2", 5));
-    CHECK(fdb_insert(db, "key3", 4, "data3", 5));
+    CHECK(fdb_insert(db, "key1", 5, "data1", 6));
+    CHECK(fdb_insert(db, "key2", 5, "data2", 6));
+    CHECK(fdb_insert(db, "key3", 5, "data3", 6));
 
     check_record(db, "key1", "data1");
     check_record(db, "key2", "data2");

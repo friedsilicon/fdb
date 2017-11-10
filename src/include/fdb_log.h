@@ -35,7 +35,7 @@ bool fdb_is_debug_enabled();
 
 #define FDB_INFO(fmt, ...)                                                     \
     do {                                                                       \
-        fprintf(stdout, fmt, ##__VA_ARGS__);\
+        fprintf(stdout, "\n" fmt, ##__VA_ARGS__);\
         fflush(stdout);                                                        \
     } while (0)
 

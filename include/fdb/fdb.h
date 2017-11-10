@@ -42,8 +42,6 @@ size_t fnode_get_keysize(fnode node);
 data fnode_get_data(fnode node);
 size_t fnode_get_datasize(fnode node);
 
-void fdb_node_set_data(fnode node, const data data);
-
 /* txn api */
 ftx fdb_txn_start(fdb db);
 bool fdb_txn_join(ftx txn, fdb db);

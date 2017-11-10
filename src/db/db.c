@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "fdb_private.h"
+#include "fdb_hexdump.h"
 #include "fdb_log.h"
 
 #include <assert.h>
@@ -9,7 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_NAME_LEN 32
+#define MAX_NAME_LEN    32
+#define MAX_KEY_SIZE    64
+#define MAX_DATA_SIZE   128
 
 static int fdb_id = 1;
 
@@ -41,6 +44,18 @@ static bool
 finish_tx(ftx tx, fdb db)
 {
     return true;
+}
+
+static void*
+fnode_get_key_priv(struct node_* node)
+{
+    return (void *) node->content;
+}
+
+static void*
+fnode_get_data_priv(struct node_* node)
+{
+    return (void *) node->content + node->header.key_size;
 }
 
 static bool 
@@ -102,13 +117,26 @@ fdb_set_name(fdb db, const char* name)
     assert(db);
     assert(!db->name); /* name is immutable */
 
+    // TODO: truncation possible
     db->name = strndup(name, MAX_NAME_LEN);
 }
 
 static inline void
-fdb_item_print(struct felem* e, const char* prefix)
+fdb_print_content(const char* prefix, const void* content, size_t size)
 {
-    FDB_INFO("%s [%lu, %p]", prefix, e->size, e->content);
+    FDB_INFO("%s [%lu, %p]", prefix, size, content);
+    hex_dump("content", (void *) content, size);
+}
+
+static void
+fdb_node_header_print(struct node_header_* h)
+{
+   FDB_INFO("header:");
+   FDB_INFO("\tnode_size:%lu", h->node_size);
+   FDB_INFO("\tkey_size:%lu", h->key_size);
+   FDB_INFO("\tdata_size:%lu", h->data_size);
+   FDB_INFO("\tkey_type:%d", h->key_type);
+   FDB_INFO("\tdata_type:%d", h->data_type);
 }
 
 static void
@@ -116,17 +144,13 @@ fdb_node_print(struct node_* n)
 {
     if (n) {
         FDB_INFO("node_p=%p", n);
-        fdb_item_print(&n->key, "key");
-        fdb_item_print(&n->data, "data");
+        fdb_node_header_print(&n->header);
+        fdb_print_content("key", fnode_get_key(n), n->header.key_size);
+        fdb_print_content("data", fnode_get_data(n), n->header.data_size);
     }
 }
 
-void
-fdb_node_log(fnode node)
-{
-    fdb_node_print(node);
-}
-
+#if 0
 static int
 fdb_elem_cmp(struct felem* n1, struct felem* n2)
 {
@@ -145,42 +169,58 @@ fdb_elem_cmp(struct felem* n1, struct felem* n2)
     ret = memcmp(n1->content, n2->content, n1->size);
     return ret;
 }
+#endif
+
+#define start_add(ptr1, type1, member1) ((type1 *)((char *)(ptr1) - offsetof(type1, member1)))
+
+static struct node_header_*
+fdb_node_get_header_from_key(const void* p)
+{
+    /* 
+    NODE = | node_header_ | key | data |
+    
+    The header is just above the key, and 
+    the key was added as a pointer, and is not
+    copied by the underlying implementation. Hence, it 
+    ok to do backwards lookup for the pointer 
+    */
+
+    /* TODO: write a rbtree implementation that doesn't require 
+    key length to be computed this way for comparison aka supported arbitrary keys */
+
+    assert(p);
+    struct node_header_* ret = NULL;
+    fnode n = (fnode) start_add(p, struct node_, content);
+    return &n->header;
+}
 
 static int
 key_cmp(const void* k1, const void* k2)
 {
-    return fdb_elem_cmp((struct felem*) k1, (struct felem*) k2);
-}
+    int ret = 0;
+    size_t k2_size;
 
-static void
-fdb_item_free(struct felem* item)
-{
-    if (item) {
-        if (item->content) {
-            free(item->content);
-            item->content = NULL;
-            item->size = 0;
-        }
-        /* don't free item itself (it is part of node) */
+    if (k1 == k2) {
+        FDB_DEBUG("Same keys");
+        return 0;
     }
-}
 
-static void
-fdb_item_copy(struct felem* src, struct felem* dest)
-{
-    assert(src);
-    assert(dest);
+    k2_size = fdb_node_get_header_from_key(k2)->key_size;
 
-    dest->content = src->content;
-    dest->size = src->size;
+    //ret = k1_size - k2_size;
+    //if (ret != 0) {
+    //    FDB_DEBUG("size mismatch => not equal: ret=%d", ret);
+    //    return ret;
+   // }
+
+    ret = memcmp(k1, k2, k2_size);
+    return ret;
 }
 
 static void
 fdb_node_free(fnode node)
 {
     if (node) {
-        fdb_item_free(&node->key);
-        fdb_item_free(&node->data);
         free(node);
     }
 }
@@ -192,58 +232,47 @@ key_val_free(void* key, void* datum)
     fdb_node_free((fnode) datum);
 }
 
-static bool
-fdb_make_item(struct felem* item, size_t size)
-{
-    assert(item);
-
-    item->content = calloc(1, size);
-    if (!item->content) {
-        return false;
-    }
-
-    item->size = size;
-    return true;
-}
-
 static struct node_*
 fdb_make_node(size_t keysize, size_t datasize)
 {
     struct node_* node = NULL;
+    size_t total_size = 0;
 
     assert(keysize > 0); /* data can be NULL */
+    assert(keysize < MAX_KEY_SIZE);
+    assert(datasize < MAX_DATA_SIZE);
 
-    node = calloc(1, sizeof(struct node_));
+    total_size = keysize + datasize + sizeof(struct node_header_);
+    node = calloc(1, total_size);
     if (node) {
-
-        if (!fdb_make_item(&node->key, keysize)) {
-            fdb_node_free(node);
-            node = NULL;
-        }
-
-        if (!fdb_make_item(&node->data, datasize)) {
-            fdb_node_free(node);
-            node = NULL;
-        }
+        node->header.node_size = total_size;
+        node->header.key_size  = keysize;
+        node->header.data_size = datasize;
     }
 
     return node;
 }
 
 static void
-fdb_item_set_content(struct felem* elem, const void* content)
-{
-    assert(elem);
-    assert(content);
-
-    memmove(elem->content, content, elem->size);
-}
-
-static void
 fdb_node_set_key(struct node_* node, const void* key)
 {
     assert(node);
-    fdb_item_set_content(&node->key, key);
+    assert(key);
+    memmove(fnode_get_key_priv(node), key, node->header.key_size);
+}
+
+static void
+fdb_node_set_data(struct node_* node, data data)
+{
+    assert(node);
+    assert(data);
+    memmove(fnode_get_data_priv(node), data, node->header.data_size);
+}
+
+static void
+fdb_node_unset_data(struct node_* node)
+{
+    memset(fnode_get_data_priv(node), 0, node->header.data_size);
 }
 
 static fdb
@@ -273,6 +302,50 @@ fdb_new(int id, const char* name, fdb_type_t type)
     }
 
     return db;
+}
+
+key
+fnode_get_key(struct node_* node)
+{
+    if (!node) {
+        return NULL;
+    }
+
+    return fnode_get_key_priv(node);
+}
+
+size_t fnode_get_keysize(fnode node)
+{
+    if (!node) {
+        return 0;
+    }
+
+    return node->header.key_size;
+}
+
+data
+fnode_get_data(struct node_* node)
+{
+    if (!node) {
+        return NULL;
+    }
+
+    return fnode_get_data_priv(node);
+}
+
+size_t fnode_get_datasize(fnode node)
+{
+    if (!node) {
+        return 0;
+    }
+
+    return node->header.data_size;
+}
+
+void
+fdb_node_log(fnode node)
+{
+    fdb_node_print(node);
 }
 
 bool
@@ -344,7 +417,8 @@ fdb_insert(fdb db, key key, size_t keysize, data data, size_t datasize)
 
     fdb_node_set_key(node, key);
     fdb_node_set_data(node, data);
-    datum_loc = dict_insert(db->dstore, &node->key, &ret);
+
+    datum_loc = dict_insert(db->dstore, fnode_get_key_priv(node), &ret);
     if (ret) {
         *datum_loc = node;
     }
@@ -356,7 +430,6 @@ bool
 fdb_update(fdb db, key key, size_t keysize, data data, size_t datasize)
 {
     fnode        node = NULL;
-    struct felem item;
     if (!db || !key || !data || (keysize == 0) || (datasize == 0)) {
         return false;
     }
@@ -366,13 +439,9 @@ fdb_update(fdb db, key key, size_t keysize, data data, size_t datasize)
         return false;
     }
 
-    if (!fdb_make_item(&item, datasize)) {
-        return false;
-    }
-
-    fdb_item_set_content(&item, data);
-    fdb_item_free(&node->data);
-    fdb_item_copy(&item, &node->data);
+    fdb_node_unset_data(node);
+    node->header.data_size = datasize;
+    fdb_node_set_data(node, data);
 
     return true;
 }
@@ -387,7 +456,6 @@ bool
 fdb_remove(fdb db, key key, size_t keysize)
 {
     fnode        node = NULL;
-    struct felem item;
     bool         ret = false;
 
     if (!db || !key || (keysize == 0)) {
@@ -401,7 +469,7 @@ fdb_remove(fdb db, key key, size_t keysize)
         return false;
     }
 
-    ret = dict_remove(db->dstore, &node->key);
+    ret = dict_remove(db->dstore, fnode_get_key(node));
     if (!ret) {
         return false;
     }
@@ -418,20 +486,13 @@ fdb_remove(fdb db, key key, size_t keysize)
 fnode
 fdb_find(fdb db, key key, size_t keysize)
 {
-    struct felem item;
-
     if (!db || !key || (keysize == 0)) {
         FDB_ERROR("Invalid Arguments");
         return NULL;
     }
 
-    /* We are not going to modify the key.
-     * Discard after search
-     */
-    item.size = keysize;
-    item.content = (void*) key;
-
-    return dict_search(db->dstore, &item);
+    FDB_INFO("key: %s, size=%lu", (char *) key, keysize);
+    return dict_search(db->dstore, key);
 }
 
 size_t fdb_traverse(fdb db, traverse_cb callback)
@@ -508,64 +569,5 @@ fiter_next(fiter iter)
     }
 
     return current;
-}
-
-void*
-felem_get_content(struct felem* elem)
-{
-    return elem->content;
-}
-
-size_t
-felem_get_size(struct felem* elem)
-{
-    return elem->size;
-}
-
-key
-fnode_get_key(fnode node)
-{
-    if (!node) {
-        return NULL;
-    }
-
-    return felem_get_content(&node->key);
-}
-
-size_t
-fnode_get_keysize(fnode node)
-{
-    if (!node) {
-        return 0;
-    }
-
-    return felem_get_size(&node->key);
-}
-
-data
-fnode_get_data(fnode node)
-{
-    if (!node) {
-        return NULL;
-    }
-
-    return felem_get_content(&node->data);
-}
-
-size_t
-fnode_get_datasize(fnode node)
-{
-    if (!node) {
-        return 0;
-    }
-
-    return felem_get_size(&node->data);
-}
-
-void
-fdb_node_set_data(struct node_* node, data data)
-{
-    assert(node);
-    fdb_item_set_content(&node->data, data);
 }
 

@@ -12,6 +12,8 @@
 
 #include "fdb/fdb.h"
 #include "dict.h"
+#include <stdio.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +30,7 @@ typedef bool (*callback_fn)(ftx tx, fdb db);
 struct fdb_
 {
     /* properties */
-    int             id;
+    int32_t         id;
     fdb_type_t      type;
     db_index_type_t idx_type;
     char*           name;
@@ -45,17 +47,19 @@ struct fdb_
     /* state */
 };
 
-struct felem
+struct node_header_
 {
-    size_t size;
-    void*  content;
+    size_t      node_size;
+    size_t      key_size;
+    size_t      data_size;
+    uint32_t    key_type;
+    uint32_t    data_type;
 };
 
 struct node_
 {
-    int          type;
-    struct felem key;
-    struct felem data;
+    struct node_header_ header;
+    uint8_t             content[0];
 };
 
 struct iter_
@@ -87,6 +91,60 @@ struct ftx_
 };
 
 bool is_fdb_handle_valid(fdb db);
+
+static void hexDump (char *desc, void *addr, int len) 
+{
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+
+    // Output description if given.
+    if (desc != NULL)
+        printf ("%s:\n", desc);
+
+    if (len == 0) {
+        printf("  ZERO LENGTH\n");
+        return;
+    }
+    if (len < 0) {
+        printf("  NEGATIVE LENGTH: %i\n",len);
+        return;
+    }
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                printf ("  %s\n", buff);
+
+            // Output the offset.
+            printf ("  %04x ", i);
+        }
+
+        // Now the hex code for the specific character.
+        printf (" %02x", pc[i]);
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+            buff[i % 16] = '.';
+        else
+            buff[i % 16] = pc[i];
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        printf ("   ");
+        i++;
+    }
+
+    // And print the final ASCII bit.
+    printf ("  %s\n", buff);
+}
+
 
 #ifdef __cplusplus
 }

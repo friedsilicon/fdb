@@ -27,7 +27,7 @@ TEST_GROUP(FdbOpsGroup)
                     const char* v, size_t vl)
     {
         CHECK(n != NULL);
-        //fdb_node_log(n);
+        fdb_node_log(n);
 
         STRCMP_EQUAL(k, (char*) fnode_get_key(n));
         CHECK_EQUAL(kl, fnode_get_keysize(n));
@@ -42,46 +42,46 @@ TEST_GROUP(FdbOpsGroup)
         kl = strlen(k);
         vl = strlen(v);
 
-        fnode n = fdb_find(db, k, kl);
-        check_node(n, k, kl, v, vl);
+        fnode n = fdb_find(db, k, kl+1);
+        check_node(n, k, kl+1, v, vl+1);
     }
 };
 // clang-format on
 
 TEST(FdbOpsGroup, Insert)
 {
-    CHECK(fdb_insert(db, "key", 3, "data", 4));
+    CHECK(fdb_insert(db, "key", 4, "data", 5));
     check_record("key", "data");
 
-    CHECK_FALSE(fdb_insert(db, "key", 3, "data", 4));
+    CHECK_FALSE(fdb_insert(db, "key", 4, "data", 5));
 
-    CHECK(fdb_insert(db, "key1", 4, "data", 4));
+    CHECK(fdb_insert(db, "key1", 5, "data", 5));
     check_record("key1", "data");
 }
 
 TEST(FdbOpsGroup, Exists)
 {
-    CHECK(fdb_insert(db, "key", 3, "data", 4));
-    CHECK(fdb_exists(db, "key", 3));
-    CHECK_FALSE(fdb_exists(db, "key1", 4));
+    CHECK(fdb_insert(db, "key", 4, "data", 5));
+    CHECK(fdb_exists(db, "key", 4));
+    CHECK_FALSE(fdb_exists(db, "key1", 5));
 }
 
 TEST(FdbOpsGroup, Update)
 {
-    CHECK(fdb_insert(db, "key", 3, "data", 4));
+    CHECK(fdb_insert(db, "key", 4, "data", 5));
     check_record("key", "data");
 
-    CHECK(fdb_update(db, "key", 3, "data1", 5));
+    CHECK(fdb_update(db, "key", 4, "data1", 6));
     check_record("key", "data1");
 }
 
 TEST(FdbOpsGroup, Remove)
 {
-    CHECK(fdb_insert(db, "key", 3, "data", 4));
+    CHECK(fdb_insert(db, "key", 4, "data", 5));
     check_record("key", "data");
 
-    CHECK(fdb_remove(db, "key", 3));
-    CHECK_FALSE(fdb_exists(db, "key", 3));
+    CHECK(fdb_remove(db, "key", 4));
+    CHECK_FALSE(fdb_exists(db, "key", 4));
 }
 
 TEST(FdbOpsGroup, Iterate)
@@ -89,9 +89,9 @@ TEST(FdbOpsGroup, Iterate)
     fiter iterator = NULL;
     fnode node = NULL;
 
-    fdb_insert(db, "1", 1, "data1", 5);
-    fdb_insert(db, "2", 1, "data2", 5);
-    fdb_insert(db, "3", 1, "data3", 5);
+    fdb_insert(db, "1", 2, "data1", 6);
+    fdb_insert(db, "2", 2, "data2", 6);
+    fdb_insert(db, "3", 2, "data3", 6);
 
     iterator = fdb_iterate(db);
     CHECK(iterator != NULL);
@@ -99,17 +99,17 @@ TEST(FdbOpsGroup, Iterate)
     CHECK(fiter_hasnext(iterator));
     node = fiter_next(iterator);
     CHECK(node != NULL);
-    check_node(node, "1", 1, "data1", 5);
+    check_node(node, "1", 2, "data1", 6);
 
     CHECK(fiter_hasnext(iterator));
     node = fiter_next(iterator);
     CHECK(node != NULL);
-    check_node(node, "2", 1, "data2", 5);
+    check_node(node, "2", 2, "data2", 6);
 
     CHECK(fiter_hasnext(iterator));
     node = fiter_next(iterator);
     CHECK(node != NULL);
-    check_node(node, "3", 1, "data3", 5);
+    check_node(node, "3", 2, "data3", 6);
 
     CHECK(fiter_hasnext(iterator) == false);
     CHECK(fiter_next(iterator) == NULL);
