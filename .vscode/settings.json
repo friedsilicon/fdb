@@ -10,6 +10,8 @@
        "-DWITH_COVERAGE=ON"
     ],
     "files.associations": {
-        "cstdlib": "cpp"
+        "cstdlib": "cpp",
+        "fdb_log.h": "c",
+        "fdb_private.h": "c"
     }
 }
