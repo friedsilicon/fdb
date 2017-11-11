@@ -63,11 +63,28 @@ fdb_file_close(fdb db)
     }
 }
 
+
+bool dict_visit_save_cb(void* state, const void* key, void* data)
+{
+    fdb_file_t* ffile = (fdb_file_t *) state;
+    // TODO: use binn to serialize each node as blob to disk
+
+    return false;
+}
+
 bool
 fdb_save_to_file(fdb db)
 {
+    dict_visit_functor traverse_and_save;
+    size_t record_count;
 
-    return false;
+    traverse_and_save.data = db->file_on_disk;
+    traverse_and_save.func = dict_visit_save_cb;
+
+    record_count = dict_traverse_with_functor(db->dstore, &traverse_and_save);
+    FDB_INFO("Wrote %lu records to %s.", record_count, db->file_on_disk->name);
+
+    return (record_count > 0);
 }
 
 bool
