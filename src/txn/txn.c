@@ -15,8 +15,8 @@ static int txn_id = 1;
 static int
 key_cmp(const void* k1, const void* k2)
 {
-    int one = *(int*) k1;
-    int two = *(int*) k2;
+    int32_t one = *(int32_t*) k1;
+    int32_t two = *(int32_t*) k2;
 
     int diff = one - two;
 
@@ -28,11 +28,20 @@ key_cmp(const void* k1, const void* k2)
 }
 
 static void
+txn_db_list_delete(void* dbid, void* db)
+{
+    if (db) {
+        fdb_log_db_state((fdb) db);
+        fdb_deinit( (fdb) db);
+    }
+}
+
+static void
 ftx_free(ftx txn)
 {
     if (txn) {
         if (txn->fdb_list) {
-            dict_free(txn->fdb_list);
+            dict_free(txn->fdb_list, txn_db_list_delete);
         }
         free(txn);
     }
@@ -45,7 +54,7 @@ ftx_alloc()
 
     txn = calloc(1, sizeof(ftx_t));
     if (txn) {
-        txn->fdb_list = skiplist_dict_new(key_cmp, NULL, 12);
+        txn->fdb_list = skiplist_dict_new(key_cmp, 10);
 
         if (!txn->fdb_list) {
             ftx_free(txn);
@@ -59,19 +68,19 @@ ftx_alloc()
 static bool
 ftx_add_db(ftx tx, fdb db)
 {
-    void** datum_loc;
-    bool   ret = true;
+    dict_insert_result result;
 
     assert(tx);
     assert(tx->fdb_list);
     assert(db);
 
     // TODO: should we return fail if found?
-    datum_loc = dict_insert(tx->fdb_list, &db->id, &ret);
-    if (ret) {
-        *datum_loc = db;
+    result = dict_insert(tx->fdb_list, &db->id);
+    if (result.inserted) {
+        *result.datum_ptr = db;
     }
-    return ret;
+
+    return result.inserted;
 }
 
 ftx
@@ -111,6 +120,7 @@ fdb_txn_join(ftx txn, fdb db)
     ret = db->join(txn, db);
     if (ret) {
         ret = ftx_add_db(txn, db);
+        assert(ret);
     }
     return ret;
 }
@@ -127,7 +137,7 @@ fdb_txn_commit(ftx txn)
     itor = dict_itor_new(txn->fdb_list);
     dict_itor_first(itor);
     for (; dict_itor_valid(itor); dict_itor_next(itor)) {
-        fdb db = (fdb) *dict_itor_data(itor);
+        fdb db = (fdb) *dict_itor_datum(itor);
 
         FDB_DEBUG("'%d': '%p'\n", *(int*) dict_itor_key(itor), db);
 
@@ -151,7 +161,7 @@ fdb_txn_commit(ftx txn)
     itor = dict_itor_new(txn->fdb_list);
     dict_itor_first(itor);
     for (; dict_itor_valid(itor); dict_itor_next(itor)) {
-        fdb db = (fdb) *dict_itor_data(itor);
+        fdb db = (fdb) *dict_itor_datum(itor);
 
         FDB_DEBUG("'%d': '%p'\n", *(int*) dict_itor_key(itor), db);
 
@@ -184,9 +194,10 @@ fdb_txn_abort(ftx txn)
     itor = dict_itor_new(txn->fdb_list);
     dict_itor_first(itor);
     for (; dict_itor_valid(itor); dict_itor_next(itor)) {
-        fdb db = (fdb) *dict_itor_data(itor);
+        fdb db = *(fdb *) dict_itor_datum(itor);
 
-        FDB_DEBUG("'%d': '%p'\n", *(int*) dict_itor_key(itor), db);
+        FDB_DEBUG("'%d': '%p'\n", *(int32_t*) dict_itor_key(itor), db);
+        fdb_log_db_state(db);
         ret = db->abort(txn, db);
         if (!ret) {
             FDB_DEBUG("Failed abort for [%d].", db->id);
@@ -214,7 +225,8 @@ fdb_txn_finish(ftx txn)
     itor = dict_itor_new(txn->fdb_list);
     dict_itor_first(itor);
     for (; dict_itor_valid(itor); dict_itor_next(itor)) {
-        fdb db = (fdb) *dict_itor_data(itor);
+        fdb db = *(fdb *) dict_itor_datum(itor);
+        FDB_DEBUG("'%d': '%p'\n", *(int32_t*) dict_itor_key(itor), db);
         db->finish(txn, db);
     }
     dict_itor_free(itor);

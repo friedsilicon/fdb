@@ -19,7 +19,7 @@ TEST_GROUP(FdbSerializeGroup)
 
     void teardown()
     {
-        fdb_deinit(&db);
+        fdb_deinit(db);
     }
 
     void check_node(const fnode n,
@@ -73,7 +73,7 @@ TEST(FdbSerializeGroup, SaveLoad)
 
     //CHECK(fdb_save(db, "./fdb-serialize.bin"));
     
-    fdb_deinit(&db);
+    fdb_deinit(db);
     db = NULL;
 
     /*

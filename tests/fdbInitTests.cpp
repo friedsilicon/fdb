@@ -16,9 +16,10 @@ TEST(FdbInitGroup, AlreadyDeInitialized)
     fdb db = NULL;
 
     db = fdb_init("foo");
-    fdb_deinit(&db);
-    CHECK(db == NULL);
-    fdb_deinit(&db);
+    fdb_deinit(db);
+    /* TODO: How to detect if a data-base was de-initialized, freed,
+       but the user calls de-init on it again? */
+    //fdb_deinit(db);
 }
 
 TEST(FdbInitGroup, InitPass)
@@ -30,13 +31,13 @@ TEST(FdbInitGroup, InitPass)
     CHECK(db1 != NULL);
     STRCMP_EQUAL("foo", db1->name);
     CHECK(db1->id != 0);
-    fdb_deinit(&db1);
+    fdb_deinit(db1);
 
     db2 = fdb_init("bar");
     CHECK(db2 != NULL);
     STRCMP_EQUAL("bar", db2->name);
     CHECK(db2->id != 0);
-    fdb_deinit(&db2);
+    fdb_deinit(db2);
 }
 
 TEST(FdbInitGroup, InitFailWithNull)
@@ -62,6 +63,6 @@ TEST(FdbInitGroup, FdbInitWithDuplicateName) /* TODO: Should this be allowed? */
     CHECK(db->id != db1->id);
     STRCMP_EQUAL("foo", db1->name);
 
-    fdb_deinit(&db);
-    fdb_deinit(&db1);
+    fdb_deinit(db);
+    fdb_deinit(db1);
 }

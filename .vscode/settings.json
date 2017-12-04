@@ -15,6 +15,10 @@
         "fdb_private.h": "c",
         "string": "c",
         "string_view": "c",
-        "vector": "c"
+        "vector": "c",
+        "algorithm": "cpp",
+        "locale": "c",
+        "typeinfo": "cpp",
+        "skiplist.h": "c"
     }
 }

@@ -15,6 +15,9 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#define FDB_MAX_DB_NAME_LEN  31
+#define FDB_MAX_DB_NAME_SIZE FDB_MAX_DB_NAME_LEN + 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,9 +36,9 @@ struct fdb_
     int32_t         id;
     fdb_type_t      type;
     db_index_type_t idx_type;
-    char*           name;
     dict*           dstore;
     fdb_file        file_on_disk;
+    char            name[FDB_MAX_DB_NAME_SIZE];
 
     /* txn methods */
     callback_fn join;
@@ -145,6 +148,7 @@ static void hexDump (char *desc, void *addr, int len)
     printf ("  %s\n", buff);
 }
 
+void fdb_log_db_state(const fdb db);
 
 #ifdef __cplusplus
 }

@@ -19,7 +19,7 @@ TEST_GROUP(FdbOpsGroup)
 
     void teardown()
     {
-        fdb_deinit(&db);
+        fdb_deinit(db);
     }
 
     void check_node(const fnode n,

@@ -10,11 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_NAME_LEN    32
 #define MAX_KEY_SIZE    64
 #define MAX_DATA_SIZE   128
+#define FDB_DB_ID_MIN   1
+#define FDB_DB_ID_INVALID (FDB_DB_ID_MIN - 1)
 
-static int fdb_id = 1;
+static int fdb_id = FDB_DB_ID_MIN;
 
 static bool
 join_tx(ftx tx, fdb db)
@@ -97,7 +98,7 @@ static void
 fdb_free(fdb db)
 {
     if (db) {
-        free(db->name);
+        fdb_log_db_state(db);
         free(db);
         db = NULL;
     }
@@ -115,10 +116,10 @@ static void
 fdb_set_name(fdb db, const char* name)
 {
     assert(db);
-    assert(!db->name); /* name is immutable */
+    //assert(!db->name); /* name is immutable */
 
     // TODO: truncation possible
-    db->name = strndup(name, MAX_NAME_LEN);
+    snprintf(db->name, FDB_MAX_DB_NAME_LEN, "%s", name);
 }
 
 static inline void
@@ -221,6 +222,7 @@ static void
 fdb_node_free(fnode node)
 {
     if (node) {
+        fdb_node_print(node);
         free(node);
     }
 }
@@ -287,7 +289,7 @@ fdb_new(int id, const char* name, fdb_type_t type)
 
     fdb_set_id(db, id);
     fdb_set_name(db, name);
-    db->dstore = rb_dict_new(key_cmp, key_val_free);
+    db->dstore = rb_dict_new(key_cmp);
     db->type = type;
 
     db->join = join_tx;
@@ -389,23 +391,21 @@ fdb_init_advanced(const char* name, fdb_type_t type)
 }
 
 void
-fdb_deinit(fdb* db)
+fdb_deinit(fdb db)
 {
-    fdb t = *db;
-    if (t && t->dstore) {
-        dict_free(t->dstore);
-        t->dstore = NULL;
+    if (db && db->dstore && (db->id != FDB_DB_ID_INVALID)) {
+        dict_free(db->dstore, key_val_free);
+        db->dstore = NULL;
+        db->id = FDB_DB_ID_INVALID;     // to make deinit re-entrant
     }
-    fdb_free(t);
-    *db = NULL;
+    fdb_free(db);
 }
 
 bool
 fdb_insert(fdb db, key key, size_t keysize, data data, size_t datasize)
 {
     struct node_* node = NULL;
-    void**        datum_loc;
-    bool          ret;
+    dict_insert_result result;
     if (!db || !key || !data || (keysize == 0) || (datasize == 0)) {
         return false;
     }
@@ -418,12 +418,12 @@ fdb_insert(fdb db, key key, size_t keysize, data data, size_t datasize)
     fdb_node_set_key(node, key);
     fdb_node_set_data(node, data);
 
-    datum_loc = dict_insert(db->dstore, fnode_get_key_priv(node), &ret);
-    if (ret) {
-        *datum_loc = node;
+    result = dict_insert(db->dstore, fnode_get_key_priv(node));
+    if (result.inserted) {
+        *result.datum_ptr = node;
     }
 
-    return ret;
+    return result.inserted;
 }
 
 bool
@@ -457,20 +457,15 @@ fdb_remove(fdb db, key key, size_t keysize)
 {
     fnode        node = NULL;
     bool         ret = false;
+    dict_remove_result result;
 
     if (!db || !key || (keysize == 0)) {
         FDB_ERROR("Invalid Arguments");
         return false;
     }
 
-    node = fdb_find(db, key, keysize);
-    if (!node) {
-        // no such node
-        return false;
-    }
-
-    ret = dict_remove(db->dstore, fnode_get_key(node));
-    if (!ret) {
+    result = dict_remove(db->dstore, key);
+    if (!result.removed) {
         return false;
     }
 
@@ -491,8 +486,16 @@ fdb_find(fdb db, key key, size_t keysize)
         return NULL;
     }
 
+    fnode* ret = NULL;
+
     FDB_INFO("key: %s, size=%lu", (char *) key, keysize);
-    return dict_search(db->dstore, key);
+    ret = (fnode *) dict_search(db->dstore, key);
+    if (ret) {
+        hex_dump("data", *ret, 32);
+        return *(ret);
+    } else {
+        return NULL;
+    }
 }
 
 size_t fdb_traverse(fdb db, traverse_cb callback)
@@ -540,7 +543,7 @@ fdb_iterate(fdb db)
         return NULL;
     }
 
-    iter->next = (fnode) *dict_itor_data(iter->it);
+    iter->next = (fnode) *dict_itor_datum(iter->it);
     return iter;
 }
 
@@ -565,9 +568,14 @@ fiter_next(fiter iter)
     current = iter->next;
     iter->next = NULL;
     if (dict_itor_next(iter->it)) {
-        iter->next = (fnode) *dict_itor_data(iter->it);
+        iter->next = (fnode) *dict_itor_datum(iter->it);
     }
 
     return current;
 }
 
+void 
+fdb_log_db_state(const fdb db)
+{
+    FDB_DEBUG("id=%d, type=%d, idx_type=%d, name=%s", db->id, db->type, db->idx_type, db->name);
+}

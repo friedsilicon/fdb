@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     db = fdb_init("foo");
 
     if (!fdb_insert(db, key, ksize, data, dsize)) {
-        fdb_deinit(&db);
+        fdb_deinit(db);
         ERROR("cannot insert");
         return 1;
     }
@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     n = fdb_find(db, key, ksize);
 
     if (!n) {
-        fdb_deinit(&db);
+        fdb_deinit(db);
         ERROR("cannot find %s", key);
         return 1;
     }
@@ -43,6 +43,6 @@ int main(int argc, char *argv[])
             (char *) fnode_get_data(n),
             fnode_get_datasize(n));
 
-    fdb_deinit(&db);
+    fdb_deinit(db);
     return 0;
 }

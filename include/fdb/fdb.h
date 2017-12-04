@@ -20,7 +20,7 @@ extern "C" {
 
 fdb fdb_init(const char* name);
 fdb fdb_init_advanced(const char* name, fdb_type_t type);
-void fdb_deinit(fdb* db);
+void fdb_deinit(fdb db);
 
 bool fdb_insert(fdb db, key key, size_t keysize, data data, size_t datasize);
 bool fdb_update(fdb db, key key, size_t keysize, data data, size_t datasize);

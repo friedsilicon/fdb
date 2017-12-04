@@ -22,7 +22,7 @@ bool fdb_is_debug_enabled();
 #define FDB_DEBUG(fmt, ...)                                                    \
     do {                                                                       \
         if (fdb_is_debug_enabled()) {                                          \
-            fprintf(stdout, "%s: %d: " fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
+            fprintf(stdout, "\n%s: %d: %s: " fmt, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); \
             fflush(stdout);                                                    \
         }                                                                      \
     } while (0)
