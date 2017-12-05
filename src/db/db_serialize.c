@@ -64,9 +64,9 @@ fdb_file_close(fdb db)
 }
 
 
-bool dict_visit_save_cb(void* state, const void* key, void* data)
+bool dict_visit_save_cb(const void* key, void* data, void* user_data)
 {
-    fdb_file_t* ffile = (fdb_file_t *) state;
+    fdb_file_t* ffile = (fdb_file_t *) user_data;
     // TODO: use binn to serialize each node as blob to disk
 
     return false;
@@ -75,13 +75,9 @@ bool dict_visit_save_cb(void* state, const void* key, void* data)
 bool
 fdb_save_to_file(fdb db)
 {
-    dict_visit_functor traverse_and_save;
     size_t record_count;
 
-    traverse_and_save.data = db->file_on_disk;
-    traverse_and_save.func = dict_visit_save_cb;
-
-    record_count = dict_traverse_with_functor(db->dstore, &traverse_and_save);
+    record_count = dict_traverse(db->dstore, &dict_visit_save_cb, db->file_on_disk);
     FDB_INFO("Wrote %lu records to %s.", record_count, db->file_on_disk->name);
 
     return (record_count > 0);

@@ -60,14 +60,12 @@ fnode_get_data_priv(struct node_* node)
 }
 
 static bool 
-fdb_traverse_callback(void* state, const void* key, void* data)
+fdb_traverse_callback(const void* key, void* data, void* user_data)
 {
-    fdb_traversal_functor_state* fstate = NULL;
-    fstate = state;
-    assert(fstate);
-    assert(key);
+    traverse_cb* callback = (traverse_cb *) user_data;
+    assert(callback);
 
-    return fstate->callback((fnode) data);
+    return (*callback)((fnode) data);
 }
 
 static fdb
@@ -500,17 +498,10 @@ fdb_find(fdb db, key key, size_t keysize)
 
 size_t fdb_traverse(fdb db, traverse_cb callback)
 {
-    dict_visit_functor          functor;
-    fdb_traversal_functor_state state;
-
     assert(db);
     assert(callback);
 
-    state.callback = callback;
-    functor.func = &fdb_traverse_callback;
-    functor.data = &state;
-
-    return dict_traverse_with_functor(db->dstore, &functor);
+    return dict_traverse(db->dstore, &fdb_traverse_callback, callback);
 }
 
 fiter
