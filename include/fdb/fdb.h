@@ -34,8 +34,8 @@ fiter fdb_iterate(fdb db);
 bool fiter_hasnext(fiter iter);
 fnode fiter_next(fiter iter);
 
-typedef bool (*traverse_cb)(fnode node);
-size_t fdb_traverse(fdb db, traverse_cb callback);
+typedef bool (*traverse_cb)(fnode node, void* user_data);
+size_t fdb_traverse(fdb db, traverse_cb callback, void* user_data);
 
 key fnode_get_key(fnode node);
 size_t fnode_get_keysize(fnode node);

@@ -3,6 +3,7 @@
  */
 #include "fdb_private.h"
 #include "CppUTest/TestHarness.h"
+#include "CppUTestExt/MockSupport.h"
 #include "fdb/fdb.h"
 #include <stdio.h>
 #include <string.h>
@@ -113,6 +114,35 @@ TEST(FdbOpsGroup, Iterate)
 
     CHECK(fiter_hasnext(iterator) == false);
     CHECK(fiter_next(iterator) == NULL);
+}
+
+bool
+test_traversal_callback(fnode node, void* user_data)
+{
+    return mock().actualCall("test_callback").returnBoolValue();
+}
+
+TEST(FdbOpsGroup, Traverse)
+{
+    CHECK(fdb_insert(db, "key1", 5, "data1", 6));
+    CHECK(fdb_insert(db, "key2", 5, "data2", 6));
+    CHECK(fdb_insert(db, "key3", 5, "data3", 6));
+
+    mock().expectOneCall("test_callback").andReturnValue(true);
+    mock().expectOneCall("test_callback").andReturnValue(true);
+    mock().expectOneCall("test_callback").andReturnValue(true);
+    CHECK(3 == fdb_traverse(db, test_traversal_callback, NULL));
+}
+
+TEST(FdbOpsGroup, TraverseFailure)
+{
+    CHECK(fdb_insert(db, "key1", 5, "data1", 6));
+    CHECK(fdb_insert(db, "key2", 5, "data2", 6));
+    CHECK(fdb_insert(db, "key3", 5, "data3", 6));
+
+    mock().expectOneCall("test_callback").andReturnValue(true);
+    mock().expectOneCall("test_callback").andReturnValue(false);
+    CHECK(2 == fdb_traverse(db, test_traversal_callback, NULL));
 }
 
 TEST(FdbOpsGroup, Invalid)
