@@ -228,7 +228,6 @@ TEST(FdbTxnGroup, TxnCommitFailedDuringPrepare)
     fdb_txn_finish(tx);
 }
 
-#if 0
 TEST(FdbTxnGroup, TxnCommitFailedDuringCommit)
 {
     ftx   tx;
@@ -273,7 +272,6 @@ TEST(FdbTxnGroup, TxnCommitFailedDuringCommit)
     mock().expectOneCall("test_3_callback").andReturnValue(true);
     fdb_txn_finish(tx);
 }
-#endif
 
 TEST(FdbTxnGroup, TxnAbort)
 {
