@@ -11,7 +11,7 @@
 #include <string.h>
 
 #define MAX_KEY_SIZE    64
-#define MAX_DATA_SIZE   128
+#define MAX_DATA_SIZE   1024
 #define FDB_DB_ID_MIN   1
 #define FDB_DB_ID_INVALID (FDB_DB_ID_MIN - 1)
 
