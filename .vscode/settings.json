@@ -19,6 +19,7 @@
         "algorithm": "cpp",
         "locale": "c",
         "typeinfo": "cpp",
-        "skiplist.h": "c"
+        "skiplist.h": "c",
+        "fdb_hexdump.h": "c"
     }
 }
