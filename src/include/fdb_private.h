@@ -52,11 +52,11 @@ struct fdb_
 
 struct node_header_
 {
-    size_t      node_size;
-    size_t      key_size;
-    size_t      data_size;
-    uint32_t    key_type;
-    uint32_t    data_type;
+    uint32_t node_size;
+    uint32_t key_size;
+    uint32_t data_size;
+    uint16_t key_type;
+    uint16_t data_type;
 };
 
 struct node_

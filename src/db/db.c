@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #define MAX_KEY_SIZE    64
 #define MAX_DATA_SIZE   1024
@@ -138,11 +139,11 @@ static void
 fdb_node_header_print(struct node_header_* h)
 {
    FDB_INFO("header:");
-   FDB_INFO("\tnode_size:%lu", h->node_size);
-   FDB_INFO("\tkey_size:%lu", h->key_size);
-   FDB_INFO("\tdata_size:%lu", h->data_size);
-   FDB_INFO("\tkey_type:%d", h->key_type);
-   FDB_INFO("\tdata_type:%d", h->data_type);
+   FDB_INFO("\tnode_size:%" PRIu32, h->node_size);
+   FDB_INFO("\tkey_size:%" PRIu32, h->key_size);
+   FDB_INFO("\tdata_size:%" PRIu32, h->data_size);
+   FDB_INFO("\tkey_type:%" PRIu16, h->key_type);
+   FDB_INFO("\tdata_type:%" PRIu16, h->data_type);
 }
 
 static void
