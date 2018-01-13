@@ -18,7 +18,7 @@ struct fdb_file_s
 };
 
 static bool
-fdb_file_open(fdb db, const char* filename)
+fdb_file_open(fdb db, const char* filename, const char* mode)
 {
     assert(db);
     assert(filename);
@@ -36,7 +36,7 @@ fdb_file_open(fdb db, const char* filename)
     }
 
     // Open binary file for read/append
-    db->file_on_disk->f = fopen(db->file_on_disk->name, "ab+");
+    db->file_on_disk->f = fopen(db->file_on_disk->name, mode);
     if (!db->file_on_disk->f) {
         return false;
     }
@@ -67,9 +67,21 @@ fdb_file_close(fdb db)
 bool dict_visit_save_cb(const void* key, void* data, void* user_data)
 {
     fdb_file_t* ffile = (fdb_file_t *) user_data;
-    // TODO: use binn to serialize each node as blob to disk
+    fnode       node = (fnode) data;
+    size_t      ret = 0;
 
-    return false;
+    ret = fwrite(node, node->header.node_size, 1, ffile->f);
+    if (ret != 1) {
+        FDB_ERROR("Error writing key_type %"PRIu16
+                  ", data_type %" PRIu16 
+                  " write to file: %s", 
+                  node->header.key_type, 
+                  node->header.data_type,
+                  ffile->name);
+        return false;
+    }
+
+    return true;
 }
 
 bool
@@ -95,7 +107,8 @@ fdb_save(fdb db, const char* filename)
     // cannot save if there are any active txn
     // cannot save if there are operations
 
-    if (!fdb_file_open(db, filename)) {
+    if (!fdb_file_open(db, filename, "ab+")) {
+        FDB_ERROR("Cannot open file %s.", filename);
         return false;
     }
 
@@ -108,7 +121,52 @@ fdb_save(fdb db, const char* filename)
 bool
 fdb_load_from_file(fdb db)
 {
-    return false;
+    // assert no data in db
+    fdb_file_t*         ffile = db->file_on_disk;
+    bool                ret = false;
+    fnode               n;
+    struct node_header_ nh;
+
+    // read node header 
+    fread(&nh, sizeof(struct node_header_), 1, ffile->f);
+    while(!feof(ffile->f)) {
+        size_t len = nh.node_size - sizeof(struct node_header_);
+        size_t nsize = sizeof(struct node_header_) + len;
+
+        n = calloc(1, nsize);
+        if (!n) {
+            FDB_ERROR("Cannot allocate node : %zu", nsize);
+            ret = false;
+            break;
+        }
+
+        n->header.key_type = nh.key_type;
+        n->header.key_size = nh.key_size;
+        n->header.data_size = nh.data_type;
+        n->header.data_size = nh.data_size;
+
+        fread(n->content, len, 1, ffile->f);
+        if (feof(ffile->f)) {
+            FDB_ERROR("Partial node header found. Truncated file!");
+            ret = false;
+            break;
+        }
+
+        ret = fdb_insert(db,
+                         fnode_get_key(n),
+                         fnode_get_keysize(n),
+                         fnode_get_data(n),
+                         fnode_get_datasize(n));
+        if (!ret) {
+            FDB_ERROR("Cannot load record. "
+                      "\nkey: %"PRIx8 "\ndata: %"PRIx8,
+                      *((uint8_t*) fnode_get_key(n)),
+                      *((uint8_t*) fnode_get_data(n)));
+            break;
+        }
+    }
+
+    return ret;
 }
 
 bool
@@ -123,7 +181,7 @@ fdb_load(fdb db, const char* filename)
     // cannot load if there are operations
     // cannot load if there is already data in the db?
 
-    if (!fdb_file_open(db, filename)) {
+    if (!fdb_file_open(db, filename, "r")) {
         return false;
     }
 

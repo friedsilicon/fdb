@@ -14,9 +14,7 @@ add_unit_test(
 
 add_unit_test(
     TARGET fdb-txn
-    SOURCES fdbInitTests.cpp
-            fdbOpsTests.cpp
-            fdbTxnTests.cpp
+    SOURCES fdbTxnTests.cpp
             RunAllTests.cpp
             ../src/common/log.c
             ../src/db/db.c
@@ -27,9 +25,7 @@ add_unit_test(
 
 add_unit_test(
     TARGET fdb-serialize
-    SOURCES fdbInitTests.cpp
-            fdbOpsTests.cpp
-            fdbSerializeTests.cpp
+    SOURCES fdbSerializeTests.cpp
             RunAllTests.cpp
             ../src/common/log.c
             ../src/db/db.c

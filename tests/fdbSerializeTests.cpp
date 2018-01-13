@@ -57,7 +57,7 @@ TEST(FdbSerializeGroup, Save)
     CHECK(fdb_insert(db, "key3", 5, "data3", 6));
     check_record(db, "key3", "data3");
 
-    //CHECK(fdb_save(db, "./fdb-serialize.bin"));
+    CHECK(fdb_save(db, "./fdb-serialize.bin"));
     remove("./fdb-serialize.bin");
 }
 
@@ -71,19 +71,17 @@ TEST(FdbSerializeGroup, SaveLoad)
     check_record(db, "key2", "data2");
     check_record(db, "key3", "data3");
 
-    //CHECK(fdb_save(db, "./fdb-serialize.bin"));
+    CHECK(fdb_save(db, "./fdb-serialize.bin"));
     
     fdb_deinit(db);
     db = NULL;
 
-    /*
     db = fdb_init("foo");
     CHECK(fdb_load(db, "./fdb-serialize.bin"));
 
     check_record(db, "key1", "data1");
     check_record(db, "key2", "data2");
     check_record(db, "key3", "data3");
-    fdb_deinit(&db);
-    */
+    fdb_deinit(db);
 }
 
