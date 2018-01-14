@@ -28,7 +28,7 @@ TEST_GROUP(FdbOpsGroup)
                     const char* v, size_t vl)
     {
         CHECK(n != NULL);
-        fdb_node_log(n);
+        fdb_log_node(n);
 
         STRCMP_EQUAL(k, (char*) fnode_get_key(n));
         CHECK_EQUAL(kl, fnode_get_keysize(n));

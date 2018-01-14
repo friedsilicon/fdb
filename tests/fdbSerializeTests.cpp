@@ -19,6 +19,7 @@ TEST_GROUP(FdbSerializeGroup)
 
     void teardown()
     {
+        remove("./fdb-serialize.bin");
         fdb_deinit(db);
     }
 
@@ -27,7 +28,6 @@ TEST_GROUP(FdbSerializeGroup)
                     const char* v, size_t vl)
     {
         CHECK(n != NULL);
-        //fdb_node_log(n);
 
         STRCMP_EQUAL(k, (char*) fnode_get_key(n));
         CHECK_EQUAL(kl, fnode_get_keysize(n));
@@ -58,18 +58,17 @@ TEST(FdbSerializeGroup, Save)
     check_record(db, "key3", "data3");
 
     CHECK(fdb_save(db, "./fdb-serialize.bin"));
-    remove("./fdb-serialize.bin");
 }
 
 TEST(FdbSerializeGroup, SaveLoad)
 {
     CHECK(fdb_insert(db, "key1", 5, "data1", 6));
-    CHECK(fdb_insert(db, "key2", 5, "data2", 6));
-    CHECK(fdb_insert(db, "key3", 5, "data3", 6));
+    CHECK(fdb_insert(db, "key2", 5, "data11", 7));
+    CHECK(fdb_insert(db, "key3", 5, "data111", 8));
 
     check_record(db, "key1", "data1");
-    check_record(db, "key2", "data2");
-    check_record(db, "key3", "data3");
+    check_record(db, "key2", "data11");
+    check_record(db, "key3", "data111");
 
     CHECK(fdb_save(db, "./fdb-serialize.bin"));
     
@@ -80,8 +79,7 @@ TEST(FdbSerializeGroup, SaveLoad)
     CHECK(fdb_load(db, "./fdb-serialize.bin"));
 
     check_record(db, "key1", "data1");
-    check_record(db, "key2", "data2");
-    check_record(db, "key3", "data3");
-    fdb_deinit(db);
+    check_record(db, "key2", "data11");
+    check_record(db, "key3", "data111");
 }
 

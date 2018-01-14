@@ -149,7 +149,8 @@ static void hexDump (char *desc, void *addr, int len)
 }
 
 void fdb_log_db_state(const fdb db);
-
+void fdb_log_node_header(struct node_header_* h);
+void fdb_log_node(struct node_* n);
 #ifdef __cplusplus
 }
 #endif

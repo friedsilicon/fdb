@@ -104,7 +104,7 @@ static void
 fdb_free(fdb db)
 {
     if (db) {
-        fdb_log_db_state(db);
+        //fdb_log_db_state(db);
         free(db);
         db = NULL;
     }
@@ -129,54 +129,35 @@ fdb_set_name(fdb db, const char* name)
 }
 
 static inline void
-fdb_print_content(const char* prefix, const void* content, size_t size)
+fdb_log_content(const char* prefix, const void* content, size_t size)
 {
-    FDB_INFO("%s [%lu, %p]", prefix, size, content);
-    hex_dump("content", (void *) content, size);
+    FDB_DEBUG("%s [%lu, %p]", prefix, size, content);
+    if (fdb_is_debug_enabled()) {
+        hex_dump(prefix, (void *) content, size);
+    }
 }
 
-static void
-fdb_node_header_print(struct node_header_* h)
+void
+fdb_log_node_header(struct node_header_* h)
 {
-   FDB_INFO("header:");
-   FDB_INFO("\tnode_size:%" PRIu32, h->node_size);
-   FDB_INFO("\tkey_size:%" PRIu32, h->key_size);
-   FDB_INFO("\tdata_size:%" PRIu32, h->data_size);
-   FDB_INFO("\tkey_type:%" PRIu16, h->key_type);
-   FDB_INFO("\tdata_type:%" PRIu16, h->data_type);
+   FDB_DEBUG("header:");
+   FDB_DEBUG("\tnode_size:%" PRIu32, h->node_size);
+   FDB_DEBUG("\tkey_size:%" PRIu32, h->key_size);
+   FDB_DEBUG("\tdata_size:%" PRIu32, h->data_size);
+   FDB_DEBUG("\tkey_type:%" PRIu16, h->key_type);
+   FDB_DEBUG("\tdata_type:%" PRIu16, h->data_type);
 }
 
-static void
-fdb_node_print(struct node_* n)
+void
+fdb_log_node(struct node_* n)
 {
     if (n) {
-        FDB_INFO("node_p=%p", n);
-        fdb_node_header_print(&n->header);
-        fdb_print_content("key", fnode_get_key(n), n->header.key_size);
-        fdb_print_content("data", fnode_get_data(n), n->header.data_size);
+        FDB_DEBUG("node_p=%p", n);
+        fdb_log_node_header(&n->header);
+        fdb_log_content("key", fnode_get_key(n), n->header.key_size);
+        fdb_log_content("data", fnode_get_data(n), n->header.data_size);
     }
 }
-
-#if 0
-static int
-fdb_elem_cmp(struct felem* n1, struct felem* n2)
-{
-    int ret = 0;
-    if (n1 == n2) {
-        FDB_DEBUG("Same keys");
-        return 0;
-    }
-
-    ret = n1->size - n2->size;
-    if (ret != 0) {
-        FDB_DEBUG("size mismatch => not equal: ret=%d", ret);
-        return ret;
-    }
-
-    ret = memcmp(n1->content, n2->content, n1->size);
-    return ret;
-}
-#endif
 
 #define start_add(ptr1, type1, member1) ((type1 *)((char *)(ptr1) - offsetof(type1, member1)))
 
@@ -214,12 +195,6 @@ key_cmp(const void* k1, const void* k2)
 
     k2_size = fdb_node_get_header_from_key(k2)->key_size;
 
-    //ret = k1_size - k2_size;
-    //if (ret != 0) {
-    //    FDB_DEBUG("size mismatch => not equal: ret=%d", ret);
-    //    return ret;
-   // }
-
     ret = memcmp(k1, k2, k2_size);
     return ret;
 }
@@ -228,7 +203,7 @@ static void
 fdb_node_free(fnode node)
 {
     if (node) {
-        fdb_node_print(node);
+        fdb_log_node(node);
         free(node);
     }
 }
@@ -244,13 +219,15 @@ static struct node_*
 fdb_make_node(size_t keysize, size_t datasize)
 {
     struct node_* node = NULL;
-    size_t total_size = 0;
+    uint32_t total_size = 0;
 
     assert(keysize > 0); /* data can be NULL */
     assert(keysize < MAX_KEY_SIZE);
     assert(datasize < MAX_DATA_SIZE);
 
     total_size = keysize + datasize + sizeof(struct node_header_);
+    FDB_DEBUG("Allocating node of size: %u", total_size);
+
     node = calloc(1, total_size);
     if (node) {
         node->header.node_size = total_size;
@@ -348,12 +325,6 @@ size_t fnode_get_datasize(fnode node)
     }
 
     return node->header.data_size;
-}
-
-void
-fdb_node_log(fnode node)
-{
-    fdb_node_print(node);
 }
 
 bool

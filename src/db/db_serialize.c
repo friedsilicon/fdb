@@ -70,6 +70,7 @@ bool dict_visit_save_cb(const void* key, void* data, void* user_data)
     fnode       node = (fnode) data;
     size_t      ret = 0;
 
+    fdb_log_node_header(&node->header);
     ret = fwrite(node, node->header.node_size, 1, ffile->f);
     if (ret != 1) {
         FDB_ERROR("Error writing key_type %"PRIu16
@@ -126,11 +127,14 @@ fdb_load_from_file(fdb db)
     bool                ret = false;
     fnode               n;
     struct node_header_ nh;
+    int                 count = 0;
 
     // read node header 
     fread(&nh, sizeof(struct node_header_), 1, ffile->f);
     while(!feof(ffile->f)) {
-        size_t len = nh.node_size - sizeof(struct node_header_);
+        count++;
+        // TODO: test for overflow. How to avoid size_t and overflow?
+        uint32_t len = nh.node_size - sizeof(struct node_header_);
         size_t nsize = sizeof(struct node_header_) + len;
 
         n = calloc(1, nsize);
@@ -145,6 +149,7 @@ fdb_load_from_file(fdb db)
         n->header.data_size = nh.data_type;
         n->header.data_size = nh.data_size;
 
+        FDB_DEBUG("%d. len=%u", count, len);
         fread(n->content, len, 1, ffile->f);
         if (feof(ffile->f)) {
             FDB_ERROR("Partial node header found. Truncated file!");
@@ -164,6 +169,11 @@ fdb_load_from_file(fdb db)
                       *((uint8_t*) fnode_get_data(n)));
             break;
         }
+
+        free (n);
+        n = NULL;
+        memset(&nh, 0, sizeof(struct node_header_));
+        fread(&nh, sizeof(struct node_header_), 1, ffile->f);
     }
 
     return ret;
@@ -182,6 +192,7 @@ fdb_load(fdb db, const char* filename)
     // cannot load if there is already data in the db?
 
     if (!fdb_file_open(db, filename, "r")) {
+        FDB_ERROR("Cannot open file: %s", filename);
         return false;
     }
 

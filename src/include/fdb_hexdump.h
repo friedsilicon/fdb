@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 /* source: https://stackoverflow.com/questions/7775991/how-to-get-hexdump-of-a-structure-data */
-static void hex_dump(char *desc, void *addr, int len) 
+static void hex_dump(const char *desc, void *addr, int len) 
 {
     int i;
     unsigned char buff[17];
