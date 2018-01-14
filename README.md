@@ -64,8 +64,7 @@ At the moment, all rights are reserved. This project will eventually be released
   - [x] Basic 2-phase txn manager
   - [ ] 2-phase commit implementation for db
   - [ ] Controller to track fdb's given out to client
-  - [ ] Serialization to disk
-  - [ ] Generate code from struct for mpack using CMake
+  - [x] Serialization to disk
   - [ ] Support Pluggability (compile time selection of alternate implementations)?
   - [ ] Dual Licensing
 
