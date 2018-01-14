@@ -104,7 +104,6 @@ static void
 fdb_free(fdb db)
 {
     if (db) {
-        //fdb_log_db_state(db);
         free(db);
         db = NULL;
     }
@@ -117,12 +116,11 @@ fdb_set_id(fdb db, int id)
     db->id = id;
 }
 
-// TODO: ensure uniqueness of the db name
+// TODO: ensure uniqueness of the db name, i.e assign dbid using name
 static void
 fdb_set_name(fdb db, const char* name)
 {
     assert(db);
-    //assert(!db->name); /* name is immutable */
 
     // TODO: truncation possible
     snprintf(db->name, FDB_MAX_DB_NAME_LEN, "%s", name);
