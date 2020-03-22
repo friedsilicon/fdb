@@ -1,20 +1,20 @@
-stages: 
+stages:
   - build
-  - publish 
+  - publish
 
-variables: 
+variables:
   CPPUTEST_HOME: /usr/
 
-before_script: 
+before_script:
   - git submodule sync
   - git submodule update --init --recursive
- 
-build: 
+
+build:
   image: vshivanand/alpine-cpp-build:latest
-  artifacts: 
-    paths: 
+  artifacts:
+    paths:
       - build/
-  script: 
+  script:
     - mkdir build
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_COVERAGE=ON ..
