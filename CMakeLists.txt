@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 set(_ECLIPSE_VERSION 4.6)
 project(fdb)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules")
 include(PlatformSpecificSupport)
 include(GenerateCtags)
