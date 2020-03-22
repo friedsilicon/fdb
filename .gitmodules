@@ -4,4 +4,3 @@
 [submodule "libdict"]
 	path = libdict
 	url = https://github.com/shiva/libdict.git
-	branch = release-fdb
