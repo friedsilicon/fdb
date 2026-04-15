@@ -1,49 +1,110 @@
 # FDB
 
-key-value store / db 
+FDB is a small embeddable C key-value database. The default build uses an
+in-memory backend, with optional save/load support for a simple flat binary
+format.
 
 [![coverage](https://img.shields.io/badge/coverage-report-blue)](https://friedsilicon.github.io/fdb/coverage/)
-[![Join the chat at https://gitter.im/shiva/fdb](https://badges.gitter.im/shiva/fdb.svg)](https://gitter.im/shiva/fdb?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Trello](http://res.cloudinary.com/shiva/image/upload/c_scale,w_80/v1478231913/trello-logo-blue_fy6esb.png)](https://trello.com/b/MmkbCOA2)
 
-## Compiling
+## Features
 
-To compile fdb, checkout this repo, initialize submodules and build, by executing the following commands
+- C99 API
+- In-memory storage backend
+- Borrowed node-view API via `fdb_node_t`
+- Forward iteration and traversal helpers
+- Basic transaction coordinator scaffolding
+- Save/load support for database contents
 
-    # git submodule update --init --recursive
-    # mkdir build
-    # cd build
-    # cmake ../
+## Build
 
-#### Build and Unit-testing
+FDB uses CMake. A typical out-of-tree build looks like this:
 
-If you are contributing to the project, verify your change using unit-tests before commiting the change.
+```sh
+git submodule update --init --recursive
+cmake -S . -B build -DWITH_TESTS=ON
+make -C build
+```
 
-To enable testing, you can execute the following to generte the test targets
+The example program is built as `build/bin/simple`.
 
-    # cmake -DWITH_TESTS=ON ../fdb/
+## Test
 
-To enable testing with coverage, execute
+With `WITH_TESTS=ON`, the build produces these test binaries:
 
-    # cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_COVERAGE=ON ../fdb
+- `build/bin/test-fdb-init`
+- `build/bin/test-fdb-ops`
+- `build/bin/test-fdb-txn`
+- `build/bin/test-fdb-serialize`
 
-This project also supports building using the most awesome [ninja build system](https://ninja-build.org/).
+You can run them directly:
 
-    # cmake -G"Ninja" -DCMAKE_BUILD_TYPE=Debug -DWITH_COVERAGE=ON ../fdb
+```sh
+./build/bin/test-fdb-init
+./build/bin/test-fdb-ops
+./build/bin/test-fdb-txn
+./build/bin/test-fdb-serialize
+```
 
-NOTE: This project uses Criterion for unit testing. Criterion is found via CMake's `find_package` mechanism.
+Or run the CTest targets from the build directory:
+
+```sh
+cd build
+ctest --output-on-failure
+```
+
+Unit tests use CMocka via CMake.
+
+## Example
+
+String keys and values should be inserted with the intended byte length. For
+NUL-terminated C strings, that usually means `strlen(value) + 1`.
+
+```c
+#include <stdio.h>
+#include <string.h>
+#include "fdb/fdb.h"
+
+int main(void)
+{
+    fdb db = fdb_init("example");
+    const char* key = "key1";
+    const char* val = "data1";
+
+    size_t key_size = strlen(key) + 1;
+    size_t val_size = strlen(val) + 1;
+
+    if (!fdb_insert(db, key, key_size, val, val_size)) {
+        return 1;
+    }
+
+    fdb_node_t node = fdb_find(db, key, key_size);
+    if (!fdb_node_valid(node)) {
+        return 1;
+    }
+
+    printf("%s -> %s\n", (const char*)node.key, (const char*)node.data);
+    fdb_deinit(db);
+    return 0;
+}
+```
+
+`fdb_node_t` is a borrowed view into backend storage. Its `key` and `data`
+pointers remain valid only until the next mutating operation on the same
+database handle, or until `fdb_deinit()`.
+
+## Public API
+
+Core entry points are declared in [include/fdb/fdb.h](include/fdb/fdb.h):
+
+- `fdb_init()` / `fdb_deinit()`
+- `fdb_insert()` / `fdb_update()` / `fdb_remove()` / `fdb_exists()`
+- `fdb_find()`
+- `fdb_iterate()` / `fiter_next()` / `fiter_free()`
+- `fdb_traverse()`
+- `fdb_txn_start()` / `fdb_txn_join()` / `fdb_txn_commit()` / `fdb_txn_abort()`
+- `fdb_save()` / `fdb_load()`
 
 ## License
 
-At the moment, all rights are reserved. This project will eventually be released with a dual-license. 
-
-
-#### TODO
-
-  - [x] Basic 2-phase txn manager
-  - [ ] 2-phase commit implementation for db
-  - [ ] Controller to track fdb's given out to client
-  - [x] Serialization to disk
-  - [ ] Support Pluggability (compile time selection of alternate implementations)?
-  - [ ] Dual Licensing
-
+At the moment, all rights are reserved. This project may eventually move to a
+dual-license model.
