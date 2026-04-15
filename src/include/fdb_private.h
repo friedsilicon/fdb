@@ -90,7 +90,8 @@ struct ftx_
 {
     int      id;
     tstate_t state;
-    dict*    fdb_list; /* list of databases in this txn */
+    int      db_count;
+    fdb      dbs[10];
 };
 
 bool is_fdb_handle_valid(fdb db);

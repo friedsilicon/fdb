@@ -73,7 +73,7 @@ fdb_traverse_callback(const void* key, void* data, void* user_data)
 
     functor = (struct fdb_traverse_functor *) user_data;
     assert(functor);
-    return functor->callback((fnode) data, user_data);
+    return functor->callback((fnode) data, functor->user_data);
 }
 
 static fdb
@@ -180,21 +180,79 @@ fdb_node_get_header_from_key(const void* p)
     return &n->header;
 }
 
+static bool
+fdb_node_header_is_valid(const struct node_header_* h)
+{
+    if (!h) {
+        return false;
+    }
+
+    if (h->key_size == 0 || h->key_size >= MAX_KEY_SIZE) {
+        return false;
+    }
+    if (h->data_size > MAX_DATA_SIZE) {
+        return false;
+    }
+    if (h->node_size < sizeof(struct node_header_) + h->key_size + h->data_size) {
+        return false;
+    }
+    if (h->node_size > sizeof(struct node_header_) + MAX_KEY_SIZE + MAX_DATA_SIZE) {
+        return false;
+    }
+
+    return true;
+}
+
+static bool
+fdb_key_is_node_backed(const void* key, struct node_header_** out_header)
+{
+    struct node_header_* h;
+
+    if (!key) {
+        return false;
+    }
+
+    h = fdb_node_get_header_from_key(key);
+    if (!fdb_node_header_is_valid(h)) {
+        return false;
+    }
+
+    if (out_header) {
+        *out_header = h;
+    }
+    return true;
+}
+
 static int
 key_cmp(const void* k1, const void* k2)
 {
-    int ret = 0;
-    size_t k2_size;
-
     if (k1 == k2) {
         FDB_DEBUG("Same keys");
         return 0;
     }
 
-    k2_size = fdb_node_get_header_from_key(k2)->key_size;
+    struct node_header_* h1 = NULL;
+    struct node_header_* h2 = NULL;
+    bool k1_node = fdb_key_is_node_backed(k1, &h1);
+    bool k2_node = fdb_key_is_node_backed(k2, &h2);
 
-    ret = memcmp(k1, k2, k2_size);
-    return ret;
+    size_t len1 = k1_node ? h1->key_size : strlen((const char*) k1) + 1;
+    size_t len2 = k2_node ? h2->key_size : strlen((const char*) k2) + 1;
+    size_t cmp_len = (len1 < len2) ? len1 : len2;
+
+    int ret = memcmp(k1, k2, cmp_len);
+    if (ret != 0) {
+        return ret;
+    }
+
+    if (len1 < len2) {
+        return -1;
+    }
+    if (len1 > len2) {
+        return 1;
+    }
+
+    return 0;
 }
 
 static void

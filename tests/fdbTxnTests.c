@@ -15,6 +15,8 @@ static int callback1_count;
 static int callback2_count;
 static int callback3_count;
 
+static bool fail_on_commit;
+
 static void
 reset_callback_state(void)
 {
@@ -24,6 +26,7 @@ reset_callback_state(void)
     callback1_count = 0;
     callback2_count = 0;
     callback3_count = 0;
+    fail_on_commit = false;
 }
 
 static bool
@@ -50,6 +53,7 @@ test_3_callback(ftx tx, fdb db)
     (void) tx;
     (void) db;
     callback3_count++;
+    if (fail_on_commit && callback3_count == 3) return false;
     return callback3_expected;
 }
 
@@ -206,7 +210,7 @@ Test(fdb_txn, txn_commit_failed_during_prepare)
 
     callback1_expected = true;
     callback2_expected = true;
-    callback3_expected = false;
+    callback3_expected = true;
     cr_assert_not(fdb_txn_commit(tx));
 
     callback1_expected = true;
@@ -221,6 +225,7 @@ Test(fdb_txn, txn_commit_failed_during_prepare)
 Test(fdb_txn, txn_commit_failed_during_commit)
 {
     reset_callback_state();
+    fail_on_commit = true;
     ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db2 = (fdb) calloc(1, sizeof(fdb_t));

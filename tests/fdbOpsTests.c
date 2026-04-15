@@ -167,9 +167,9 @@ Test(fdb_ops, traverse_failure)
 
 Test(fdb_ops, invalid)
 {
-    cr_assert_not(fdb_insert(NULL, 0, NULL, 0));
-    cr_assert_not(fdb_insert(NULL, 0, "data", 4));
-    cr_assert_not(fdb_insert("key", 3, NULL, 0));
+    cr_assert_not(fdb_insert(NULL, NULL, 0, NULL, 0));
+    cr_assert_not(fdb_insert(NULL, NULL, 0, "data", 4));
+    cr_assert_not(fdb_insert(NULL, "key", 3, NULL, 0));
     cr_assert_not(fdb_insert(NULL, "key", 3, "data", 4));
 
     cr_assert_not(fdb_update(NULL, NULL, 0, NULL, 0));
@@ -179,16 +179,12 @@ Test(fdb_ops, invalid)
 
     cr_assert_not(fdb_remove(NULL, NULL, 0));
     cr_assert_not(fdb_remove(NULL, "key", 3));
-    cr_assert_not(fdb_remove("key", NULL, 0));
-    cr_assert_not(fdb_remove("key", "key", 3));
+    cr_assert_not(fdb_remove(NULL, "key", 0));
     cr_assert_not(fdb_remove(NULL, "key", 3));
-    cr_assert_not(fdb_remove("key", 0));
 
     cr_assert_not(fdb_exists(NULL, "key", 3));
     cr_assert_not(fdb_exists(NULL, NULL, 0));
-    cr_assert_not(fdb_exists(NULL, "key", 3));
-    cr_assert_not(fdb_exists("key", NULL, 0));
-    cr_assert_not(fdb_exists("key", "key", 3));
+    cr_assert_not(fdb_exists(NULL, "key", 0));
 
     cr_assert_null(fnode_get_key(NULL));
     cr_assert_eq(0, fnode_get_keysize(NULL));

@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
-set(_ECLIPSE_VERSION 4.6)
+cmake_minimum_required(VERSION 3.5)
 project(fdb)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -11,7 +10,7 @@ set(CMAKE_COLOR_MAKEFILE   ON)
 
 option(WITH_COVERAGE "Build with code coverage support (requires lcov and build with tests)." OFF)
 #option(WITH_DOC "Build API documentation (requires Doxygen)." OFF)
-option(WITH_TESTS "Build tests (requires CppUTest)." OFF)
+option(WITH_TESTS "Build tests (requires Criterion)." OFF)
 
 if(WITH_COVERAGE)
     set(WITH_TESTS ON)
@@ -19,7 +18,6 @@ if(WITH_COVERAGE)
     # Enable code coverage.
     # Build with debugging information to make the output meaningful.
     # Disable optimizations to get the most accurate results.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -g -O0")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -g -O0")
 
     add_coverage(
@@ -31,7 +29,7 @@ if(WITH_COVERAGE)
 else()
     message(STATUS "COVERAGE disabled. ")
 endif()
-include(UseCppUTest)
+include(UseCriterion)
 
 # The version number
 set (fdb_VERSION_MAJOR 0)
