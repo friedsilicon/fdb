@@ -3,62 +3,67 @@
  */
 #include "fdb_private.h"
 #include "fdb/fdb.h"
-#include <criterion/criterion.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 #include <stdio.h>
 #include <string.h>
 
-Test(fdb_init, already_deinitialized)
+static void fdb_init_already_deinitialized(void **state)
 {
-    fdb db = NULL;
-
-    db = fdb_init("foo");
+    (void) state;
+    fdb db = fdb_init("foo");
     fdb_deinit(db);
-    /* TODO: How to detect if a data-base was de-initialized, freed,
-       but the user calls de-init on it again? */
-    //fdb_deinit(db);
 }
 
-Test(fdb_init, init_pass)
+static void fdb_init_init_pass(void **state)
 {
-    fdb db1 = NULL;
-    fdb db2 = NULL;
-
-    db1 = fdb_init("foo");
-    cr_assert_not_null(db1);
-    cr_assert_str_eq("foo", db1->name);
-    cr_assert_neq(db1->id, 0);
+    (void) state;
+    fdb db1 = fdb_init("foo");
+    assert_non_null(db1);
+    assert_string_equal("foo", db1->name);
+    assert_true(db1->id != 0);
     fdb_deinit(db1);
 
-    db2 = fdb_init("bar");
-    cr_assert_not_null(db2);
-    cr_assert_str_eq("bar", db2->name);
-    cr_assert_neq(db2->id, 0);
+    fdb db2 = fdb_init("bar");
+    assert_non_null(db2);
+    assert_string_equal("bar", db2->name);
+    assert_true(db2->id != 0);
     fdb_deinit(db2);
 }
 
-Test(fdb_init, init_fail_with_null)
+static void fdb_init_init_fail_with_null(void **state)
 {
-    fdb db = NULL;
-
-    db = fdb_init(NULL);
-    cr_assert_null(db);
+    (void) state;
+    fdb db = fdb_init(NULL);
+    assert_null(db);
 }
 
-Test(fdb_init, duplicate_name)
+static void fdb_init_duplicate_name(void **state)
 {
-    fdb db = NULL;
-    fdb db1 = NULL;
+    (void) state;
+    fdb db = fdb_init("foo");
+    assert_non_null(db);
+    assert_true(db->id != 0);
+    assert_string_equal("foo", db->name);
 
-    db = fdb_init("foo");
-    cr_assert_not_null(db);
-    cr_assert_neq(db->id, 0);
-    cr_assert_str_eq("foo", db->name);
-
-    db1 = fdb_init("foo");
-    cr_assert_neq(db1, db);
-    cr_assert_neq(db->id, db1->id);
-    cr_assert_str_eq("foo", db1->name);
+    fdb db1 = fdb_init("foo");
+    assert_true(db1 != db);
+    assert_true(db->id != db1->id);
+    assert_string_equal("foo", db1->name);
 
     fdb_deinit(db);
     fdb_deinit(db1);
+}
+
+int main(void)
+{
+    const struct CMUnitTest tests[] = {
+        cmocka_unit_test(fdb_init_already_deinitialized),
+        cmocka_unit_test(fdb_init_init_pass),
+        cmocka_unit_test(fdb_init_init_fail_with_null),
+        cmocka_unit_test(fdb_init_duplicate_name),
+    };
+    return cmocka_run_group_tests(tests, NULL, NULL);
 }

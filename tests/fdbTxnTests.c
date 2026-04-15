@@ -1,10 +1,14 @@
 /*
  * Copyright © 2016 Shivanand Velmurugan. All Rights Reserved.
  */
-#include <criterion/criterion.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 #include "fdb/fdb.h"
 #include "fdb_private.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static bool callback1_expected;
@@ -78,17 +82,19 @@ setupDB(fdb db, int id, callback_fn fn)
     setupCallback(db, fn);
 }
 
-Test(fdb_txn, txn_ops_invalid)
+static void fdb_txn_txn_ops_invalid(void **state)
 {
-    cr_assert_null(fdb_txn_start(NULL));
-    cr_assert_not(fdb_txn_join(NULL, NULL));
-    cr_assert_not(fdb_txn_commit(NULL));
-    cr_assert_not(fdb_txn_abort(NULL));
+    (void) state;
+    assert_null(fdb_txn_start(NULL));
+    assert_false(fdb_txn_join(NULL, NULL));
+    assert_false(fdb_txn_commit(NULL));
+    assert_false(fdb_txn_abort(NULL));
     fdb_txn_finish(NULL);
 }
 
-Test(fdb_txn, txn_start_and_join_invalid)
+static void fdb_txn_txn_start_and_join_invalid(void **state)
 {
+    (void) state;
     reset_callback_state();
     ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
@@ -104,37 +110,35 @@ Test(fdb_txn, txn_start_and_join_invalid)
     db2->idx_type = DB_SINGLE_INDEX;
     setupCallback(db2, &test_2_callback);
 
-    cr_assert_not(fdb_txn_join(NULL, db2));
-    cr_assert_not(fdb_txn_join(tx, NULL));
+    assert_false(fdb_txn_join(NULL, db2));
+    assert_false(fdb_txn_join(tx, NULL));
 
     callback1_expected = false;
-    cr_assert_null(fdb_txn_start(db1));
-    cr_assert_eq(callback1_count, 1);
+    assert_null(fdb_txn_start(db1));
+    assert_int_equal(callback1_count, 1);
 
     callback1_expected = true;
     tx = fdb_txn_start(db1);
-    cr_assert_not_null(tx);
-    cr_assert_eq(callback1_count, 2);
+    assert_non_null(tx);
+    assert_int_equal(callback1_count, 2);
 
     callback2_expected = false;
-    cr_assert_not(fdb_txn_join(tx, db2));
-    cr_assert_eq(callback2_count, 1);
+    assert_false(fdb_txn_join(tx, db2));
+    assert_int_equal(callback2_count, 1);
 
     callback2_expected = true;
-    cr_assert(fdb_txn_join(tx, db2));
-    cr_assert_eq(callback2_count, 2);
+    assert_true(fdb_txn_join(tx, db2));
+    assert_int_equal(callback2_count, 2);
 
-    callback1_expected = true;
-    callback2_expected = true;
     fdb_txn_finish(tx);
     free(db1);
     free(db2);
 }
 
-Test(fdb_txn, txn_start_and_join)
+static void fdb_txn_txn_start_and_join(void **state)
 {
+    (void) state;
     reset_callback_state();
-    ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db2 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db3 = (fdb) calloc(1, sizeof(fdb_t));
@@ -143,25 +147,22 @@ Test(fdb_txn, txn_start_and_join)
     setupDB(db2, 11, &test_2_callback);
     setupDB(db3, 12, &test_3_callback);
 
-    tx = fdb_txn_start(db1);
-    cr_assert_not_null(tx);
+    ftx tx = fdb_txn_start(db1);
+    assert_non_null(tx);
 
-    cr_assert(fdb_txn_join(tx, db3));
-    cr_assert(fdb_txn_join(tx, db2));
+    assert_true(fdb_txn_join(tx, db3));
+    assert_true(fdb_txn_join(tx, db2));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
     fdb_txn_finish(tx);
     free(db1);
     free(db2);
     free(db3);
 }
 
-Test(fdb_txn, txn_commit)
+static void fdb_txn_txn_commit(void **state)
 {
+    (void) state;
     reset_callback_state();
-    ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db2 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db3 = (fdb) calloc(1, sizeof(fdb_t));
@@ -170,30 +171,24 @@ Test(fdb_txn, txn_commit)
     setupDB(db2, 11, &test_2_callback);
     setupDB(db3, 12, &test_3_callback);
 
-    tx = fdb_txn_start(db1);
-    cr_assert_not_null(tx);
+    ftx tx = fdb_txn_start(db1);
+    assert_non_null(tx);
 
-    cr_assert(fdb_txn_join(tx, db2));
-    cr_assert(fdb_txn_join(tx, db3));
+    assert_true(fdb_txn_join(tx, db2));
+    assert_true(fdb_txn_join(tx, db3));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
-    cr_assert(fdb_txn_commit(tx));
+    assert_true(fdb_txn_commit(tx));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
     fdb_txn_finish(tx);
     free(db1);
     free(db2);
     free(db3);
 }
 
-Test(fdb_txn, txn_commit_failed_during_prepare)
+static void fdb_txn_txn_commit_failed_during_prepare(void **state)
 {
+    (void) state;
     reset_callback_state();
-    ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db2 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db3 = (fdb) calloc(1, sizeof(fdb_t));
@@ -202,31 +197,26 @@ Test(fdb_txn, txn_commit_failed_during_prepare)
     setupDB(db2, 11, &test_2_callback);
     setupDB(db3, 12, &test_3_callback);
 
-    tx = fdb_txn_start(db1);
-    cr_assert_not_null(tx);
+    ftx tx = fdb_txn_start(db1);
+    assert_non_null(tx);
 
-    cr_assert(fdb_txn_join(tx, db2));
-    cr_assert(fdb_txn_join(tx, db3));
+    assert_true(fdb_txn_join(tx, db2));
+    assert_true(fdb_txn_join(tx, db3));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
-    cr_assert_not(fdb_txn_commit(tx));
+    callback3_expected = false;
+    assert_false(fdb_txn_commit(tx));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
     fdb_txn_finish(tx);
     free(db1);
     free(db2);
     free(db3);
 }
 
-Test(fdb_txn, txn_commit_failed_during_commit)
+static void fdb_txn_txn_commit_failed_during_commit(void **state)
 {
+    (void) state;
     reset_callback_state();
     fail_on_commit = true;
-    ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db2 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db3 = (fdb) calloc(1, sizeof(fdb_t));
@@ -235,30 +225,24 @@ Test(fdb_txn, txn_commit_failed_during_commit)
     setupDB(db2, 11, &test_2_callback);
     setupDB(db3, 12, &test_3_callback);
 
-    tx = fdb_txn_start(db1);
-    cr_assert_not_null(tx);
+    ftx tx = fdb_txn_start(db1);
+    assert_non_null(tx);
 
-    cr_assert(fdb_txn_join(tx, db2));
-    cr_assert(fdb_txn_join(tx, db3));
+    assert_true(fdb_txn_join(tx, db2));
+    assert_true(fdb_txn_join(tx, db3));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
-    cr_assert_not(fdb_txn_commit(tx));
+    assert_false(fdb_txn_commit(tx));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
     fdb_txn_finish(tx);
     free(db1);
     free(db2);
     free(db3);
 }
 
-Test(fdb_txn, txn_abort)
+static void fdb_txn_txn_abort(void **state)
 {
+    (void) state;
     reset_callback_state();
-    ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db2 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db3 = (fdb) calloc(1, sizeof(fdb_t));
@@ -267,30 +251,24 @@ Test(fdb_txn, txn_abort)
     setupDB(db2, 11, &test_2_callback);
     setupDB(db3, 12, &test_3_callback);
 
-    tx = fdb_txn_start(db1);
-    cr_assert_not_null(tx);
+    ftx tx = fdb_txn_start(db1);
+    assert_non_null(tx);
 
-    cr_assert(fdb_txn_join(tx, db2));
-    cr_assert(fdb_txn_join(tx, db3));
+    assert_true(fdb_txn_join(tx, db2));
+    assert_true(fdb_txn_join(tx, db3));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
-    cr_assert(fdb_txn_abort(tx));
+    assert_true(fdb_txn_abort(tx));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
     fdb_txn_finish(tx);
     free(db1);
     free(db2);
     free(db3);
 }
 
-Test(fdb_txn, txn_abort_fails)
+static void fdb_txn_txn_abort_fails(void **state)
 {
+    (void) state;
     reset_callback_state();
-    ftx tx = NULL;
     fdb db1 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db2 = (fdb) calloc(1, sizeof(fdb_t));
     fdb db3 = (fdb) calloc(1, sizeof(fdb_t));
@@ -299,22 +277,32 @@ Test(fdb_txn, txn_abort_fails)
     setupDB(db2, 11, &test_2_callback);
     setupDB(db3, 12, &test_3_callback);
 
-    tx = fdb_txn_start(db1);
-    cr_assert_not_null(tx);
+    ftx tx = fdb_txn_start(db1);
+    assert_non_null(tx);
 
-    cr_assert(fdb_txn_join(tx, db2));
-    cr_assert(fdb_txn_join(tx, db3));
+    assert_true(fdb_txn_join(tx, db2));
+    assert_true(fdb_txn_join(tx, db3));
 
-    callback1_expected = true;
-    callback2_expected = true;
     callback3_expected = false;
-    cr_assert_not(fdb_txn_abort(tx));
+    assert_false(fdb_txn_abort(tx));
 
-    callback1_expected = true;
-    callback2_expected = true;
-    callback3_expected = true;
     fdb_txn_finish(tx);
     free(db1);
     free(db2);
     free(db3);
+}
+
+int main(void)
+{
+    const struct CMUnitTest tests[] = {
+        cmocka_unit_test(fdb_txn_txn_ops_invalid),
+        cmocka_unit_test(fdb_txn_txn_start_and_join_invalid),
+        cmocka_unit_test(fdb_txn_txn_start_and_join),
+        cmocka_unit_test(fdb_txn_txn_commit),
+        cmocka_unit_test(fdb_txn_txn_commit_failed_during_prepare),
+        cmocka_unit_test(fdb_txn_txn_commit_failed_during_commit),
+        cmocka_unit_test(fdb_txn_txn_abort),
+        cmocka_unit_test(fdb_txn_txn_abort_fails),
+    };
+    return cmocka_run_group_tests(tests, NULL, NULL);
 }

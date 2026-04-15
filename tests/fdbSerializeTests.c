@@ -3,23 +3,28 @@
  */
 #include "fdb_private.h"
 #include "fdb/fdb.h"
-#include <criterion/criterion.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 #include <stdio.h>
 #include <string.h>
 
 static fdb db;
 
-static void
-fdb_serialize_setup(void)
+static int fdb_serialize_setup(void **state)
 {
+    (void) state;
     db = fdb_init("foo");
+    return 0;
 }
 
-static void
-fdb_serialize_teardown(void)
+static int fdb_serialize_teardown(void **state)
 {
+    (void) state;
     remove("./fdb-serialize.bin");
     fdb_deinit(db);
+    return 0;
 }
 
 static void
@@ -27,59 +32,62 @@ check_node(const fnode n,
            const char* k, size_t kl,
            const char* v, size_t vl)
 {
-    cr_assert_not_null(n);
-    cr_assert_str_eq(k, (char*) fnode_get_key(n));
-    cr_assert_eq(kl, fnode_get_keysize(n));
-    cr_assert_str_eq(v, (char*) fnode_get_data(n));
-    cr_assert_eq(vl, fnode_get_datasize(n));
+    assert_non_null(n);
+    assert_string_equal(k, (char*) fnode_get_key(n));
+    assert_int_equal(kl, fnode_get_keysize(n));
+    assert_string_equal(v, (char*) fnode_get_data(n));
+    assert_int_equal(vl, fnode_get_datasize(n));
 }
 
 static void
 check_record(fdb db_inst, const char* k, const char* v)
 {
-    size_t kl, vl;
-
-    kl = strlen(k);
-    vl = strlen(v);
-
+    size_t kl = strlen(k);
+    size_t vl = strlen(v);
     fnode n = fdb_find(db_inst, k, kl+1);
     check_node(n, k, kl+1, v, vl+1);
 }
 
-TestSuite(fdb_serialize, .init = fdb_serialize_setup, .fini = fdb_serialize_teardown);
-
-Test(fdb_serialize, save)
+static void fdb_serialize_save(void **state)
 {
-    cr_assert(fdb_insert(db, "key1", 5, "data1", 6));
+    (void) state;
+    assert_true(fdb_insert(db, "key1", 5, "data1", 6));
     check_record(db, "key1", "data1");
-    cr_assert(fdb_insert(db, "key2", 5, "data2", 6));
+    assert_true(fdb_insert(db, "key2", 5, "data2", 6));
     check_record(db, "key2", "data2");
-    cr_assert(fdb_insert(db, "key3", 5, "data3", 6));
+    assert_true(fdb_insert(db, "key3", 5, "data3", 6));
     check_record(db, "key3", "data3");
 
-    cr_assert(fdb_save(db, "./fdb-serialize.bin"));
+    assert_true(fdb_save(db, "./fdb-serialize.bin"));
 }
 
-Test(fdb_serialize, save_load)
+static void fdb_serialize_save_load(void **state)
 {
-    cr_assert(fdb_insert(db, "key1", 5, "data1", 6));
-    cr_assert(fdb_insert(db, "key2", 5, "data11", 7));
-    cr_assert(fdb_insert(db, "key3", 5, "data111", 8));
+    (void) state;
+    assert_true(fdb_insert(db, "key1", 5, "data1", 6));
+    assert_true(fdb_insert(db, "key2", 5, "data11", 7));
+    assert_true(fdb_insert(db, "key3", 5, "data111", 8));
 
     check_record(db, "key1", "data1");
     check_record(db, "key2", "data11");
     check_record(db, "key3", "data111");
 
-    cr_assert(fdb_save(db, "./fdb-serialize.bin"));
-    
-    fdb_deinit(db);
-    db = NULL;
+    assert_true(fdb_save(db, "./fdb-serialize.bin"));
 
+    fdb_deinit(db);
     db = fdb_init("foo");
-    cr_assert(fdb_load(db, "./fdb-serialize.bin"));
+    assert_true(fdb_load(db, "./fdb-serialize.bin"));
 
     check_record(db, "key1", "data1");
     check_record(db, "key2", "data11");
     check_record(db, "key3", "data111");
 }
 
+int main(void)
+{
+    const struct CMUnitTest tests[] = {
+        cmocka_unit_test_setup_teardown(fdb_serialize_save,      fdb_serialize_setup, fdb_serialize_teardown),
+        cmocka_unit_test_setup_teardown(fdb_serialize_save_load, fdb_serialize_setup, fdb_serialize_teardown),
+    };
+    return cmocka_run_group_tests(tests, NULL, NULL);
+}

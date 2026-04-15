@@ -1,12 +1,19 @@
-include(UseCriterion)
+include(UseCMocka)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/include)
 include_directories(${PROJECT_SOURCE_DIR}/libdict/include)
 
 add_unit_test(
-    TARGET fdb-ops
+    TARGET fdb-init
     SOURCES fdbInitTests.c
-            fdbOpsTests.c
+            ../src/common/log.c
+            ../src/db/db.c
+    LIBRARIES dict
+)
+
+add_unit_test(
+    TARGET fdb-ops
+    SOURCES fdbOpsTests.c
             ../src/common/log.c
             ../src/db/db.c
     LIBRARIES dict

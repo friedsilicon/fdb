@@ -29,7 +29,7 @@ if(WITH_COVERAGE)
 else()
     message(STATUS "COVERAGE disabled. ")
 endif()
-include(UseCriterion)
+include(UseCMocka)
 
 # The version number
 set (fdb_VERSION_MAJOR 0)
