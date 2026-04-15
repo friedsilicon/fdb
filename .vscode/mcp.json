@@ -1,0 +1,27 @@
+{
+  "servers": {
+    "trello": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": ["@delorenj/mcp-server-trello"],
+      "env": {
+        "TRELLO_API_KEY": "${input:trello_api_key}",
+        "TRELLO_TOKEN": "${input:trello_token}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "trello_api_key",
+      "description": "Trello API key",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "trello_token",
+      "description": "Trello token",
+      "password": true
+    }
+  ]
+}
