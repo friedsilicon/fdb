@@ -99,6 +99,44 @@ static void fdb_ops_update(void **state)
     fdb_deinit(db);
 }
 
+static void fdb_ops_update_larger_data(void **state)
+{
+    (void) state;
+    fdb db = fdb_init("foo");
+    assert_true(fdb_insert(db, "key", 4, "hi", 3));
+    check_record(db, "key", "hi");
+
+    /* grow: new data is larger than original allocation */
+    assert_true(fdb_update(db, "key", 4, "much_longer_value", 18));
+    check_record(db, "key", "much_longer_value");
+
+    /* key still works for exists/find after realloc */
+    assert_true(fdb_exists(db, "key", 4));
+    fdb_deinit(db);
+}
+
+static void fdb_ops_update_smaller_data(void **state)
+{
+    (void) state;
+    fdb db = fdb_init("foo");
+    assert_true(fdb_insert(db, "key", 4, "much_longer_value", 18));
+    check_record(db, "key", "much_longer_value");
+
+    /* shrink: new data is smaller than original allocation */
+    assert_true(fdb_update(db, "key", 4, "hi", 3));
+    check_record(db, "key", "hi");
+    assert_int_equal(3, fnode_get_datasize(fdb_find(db, "key", 4)));
+    fdb_deinit(db);
+}
+
+static void fdb_ops_update_nonexistent(void **state)
+{
+    (void) state;
+    fdb db = fdb_init("foo");
+    assert_false(fdb_update(db, "key", 4, "data", 5));
+    fdb_deinit(db);
+}
+
 static void fdb_ops_remove(void **state)
 {
     (void) state;
@@ -108,6 +146,30 @@ static void fdb_ops_remove(void **state)
 
     assert_true(fdb_remove(db, "key", 4));
     assert_false(fdb_exists(db, "key", 4));
+    fdb_deinit(db);
+}
+
+static void fdb_ops_remove_then_reinsert(void **state)
+{
+    (void) state;
+    fdb db = fdb_init("foo");
+    assert_true(fdb_insert(db, "key", 4, "original", 9));
+    check_record(db, "key", "original");
+
+    assert_true(fdb_remove(db, "key", 4));
+    assert_false(fdb_exists(db, "key", 4));
+
+    /* reinsert with different data — must succeed and return new value */
+    assert_true(fdb_insert(db, "key", 4, "newvalue", 10));
+    check_record(db, "key", "newvalue");
+    fdb_deinit(db);
+}
+
+static void fdb_ops_remove_nonexistent(void **state)
+{
+    (void) state;
+    fdb db = fdb_init("foo");
+    assert_false(fdb_remove(db, "key", 4));
     fdb_deinit(db);
 }
 
@@ -142,7 +204,23 @@ static void fdb_ops_iterate(void **state)
 
     assert_false(fiter_hasnext(iterator));
     assert_null(fiter_next(iterator));
+    fiter_free(iterator);
     fdb_deinit(db);
+}
+
+static void fdb_ops_iterate_empty_db(void **state)
+{
+    (void) state;
+    fdb db = fdb_init("foo");
+    /* iterating an empty db must not crash and must return NULL */
+    assert_null(fdb_iterate(db));
+    fdb_deinit(db);
+}
+
+static void fdb_ops_fiter_free_null(void **state)
+{
+    (void) state;
+    fiter_free(NULL); /* must not crash */
 }
 
 static void fdb_ops_traverse(void **state)
@@ -209,8 +287,15 @@ int main(void)
         cmocka_unit_test(fdb_ops_exists),
         cmocka_unit_test(fdb_ops_prefix_keys_distinct),
         cmocka_unit_test(fdb_ops_update),
+        cmocka_unit_test(fdb_ops_update_larger_data),
+        cmocka_unit_test(fdb_ops_update_smaller_data),
+        cmocka_unit_test(fdb_ops_update_nonexistent),
         cmocka_unit_test(fdb_ops_remove),
+        cmocka_unit_test(fdb_ops_remove_then_reinsert),
+        cmocka_unit_test(fdb_ops_remove_nonexistent),
         cmocka_unit_test(fdb_ops_iterate),
+        cmocka_unit_test(fdb_ops_iterate_empty_db),
+        cmocka_unit_test(fdb_ops_fiter_free_null),
         cmocka_unit_test(fdb_ops_traverse),
         cmocka_unit_test(fdb_ops_traverse_failure),
         cmocka_unit_test(fdb_ops_invalid),

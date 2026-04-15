@@ -462,20 +462,43 @@ fdb_insert(fdb db, key key, size_t keysize, data data, size_t datasize)
 bool
 fdb_update(fdb db, key key, size_t keysize, data data, size_t datasize)
 {
-    fnode        node = NULL;
     if (!db || !key || !data || (keysize == 0) || (datasize == 0)) {
         return false;
     }
 
-    node = fdb_find(db, key, keysize);
-    if (!node) {
+    fnode old_node = fdb_find(db, key, keysize);
+    if (!old_node) {
         return false;
     }
 
-    fdb_node_unset_data(node);
-    node->header.data_size = datasize;
-    fdb_node_set_data(node, data);
+    if (datasize == old_node->header.data_size) {
+        fdb_node_unset_data(old_node);
+        fdb_node_set_data(old_node, data);
+        return true;
+    }
 
+    /* Data size changed: allocate a correctly-sized node, swap it in. */
+    struct node_* new_node = fdb_make_node(keysize, datasize);
+    if (!new_node) {
+        return false;
+    }
+    fdb_node_set_key(new_node, key);
+    fdb_node_set_data(new_node, data);
+
+    dict_remove_result rem = dict_remove(db->dstore, key);
+    if (!rem.removed) {
+        fdb_node_free(new_node);
+        return false;
+    }
+
+    dict_insert_result ins = dict_insert(db->dstore, fnode_get_key_priv(new_node));
+    if (!ins.inserted) {
+        fdb_node_free(new_node);
+        fdb_node_free((fnode) rem.datum);
+        return false;
+    }
+    *ins.datum_ptr = new_node;
+    fdb_node_free((fnode) rem.datum);
     return true;
 }
 
@@ -502,12 +525,7 @@ fdb_remove(fdb db, key key, size_t keysize)
         return false;
     }
 
-    // TODO: How to free data stored in the DB?
-    // Should we register a destructor and call it?
-    // Should we return to user
-    // Should we allow the user to provide a "callback" in the remove call?
-
-    // fdb_node_free(node);
+    fdb_node_free((fnode) result.datum);
     return true;
 }
 
@@ -560,23 +578,38 @@ fdb_iterate(fdb db)
     iter->it = dict_itor_new(db->dstore);
     if (!iter->it) {
         FDB_ERROR("Cannot create iterator");
+        free(iter);
         return NULL;
     }
 
     if (!dict_itor_first(iter->it)) {
         FDB_ERROR("Cannot create iterator");
         dict_itor_free(iter->it);
+        free(iter);
         return NULL;
     }
 
     if (!dict_itor_valid(iter->it)) {
         FDB_ERROR("No elements in the iterator");
         dict_itor_free(iter->it);
+        free(iter);
         return NULL;
     }
 
     iter->next = (fnode) *dict_itor_datum(iter->it);
     return iter;
+}
+
+void
+fiter_free(fiter iter)
+{
+    if (!iter) {
+        return;
+    }
+    if (iter->it) {
+        dict_itor_free(iter->it);
+    }
+    free(iter);
 }
 
 bool
