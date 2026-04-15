@@ -14,11 +14,14 @@
 int main(int argc, char *argv[])
 {
     fdb db;
-    fnode n;
+    fdb_node_t n;
     const char* key = "key1";
     const char* data = "data1";
-    size_t      ksize = strlen(key);
-    size_t      dsize = strlen(data);
+    size_t      ksize = strlen(key) + 1;
+    size_t      dsize = strlen(data) + 1;
+
+    (void)argc;
+    (void)argv;
 
     db = fdb_init("foo");
 
@@ -30,18 +33,15 @@ int main(int argc, char *argv[])
 
     n = fdb_find(db, key, ksize);
 
-    if (!n) {
+    if (!fdb_node_valid(n)) {
         fdb_deinit(db);
         ERROR("cannot find %s", key);
         return 1;
     }
 
-    // found node, get data and print
-    printf("%s(%lu):%s(%lu)\n", 
-            (char *) fnode_get_key(n),
-            fnode_get_keysize(n),
-            (char *) fnode_get_data(n),
-            fnode_get_datasize(n));
+    printf("%.*s(%zu):%.*s(%zu)\n",
+           (int)n.key_size, (const char*)n.key, n.key_size,
+           (int)n.data_size, (const char*)n.data, n.data_size);
 
     fdb_deinit(db);
     return 0;

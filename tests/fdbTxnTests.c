@@ -77,7 +77,6 @@ setupDB(fdb db, int id, callback_fn fn)
     memset(db, 0, sizeof(fdb_t));
     db->id = id;
     db->type = FDB_SINGLE_INDEX_DB;
-    db->idx_type = DB_SINGLE_INDEX;
     snprintf(db->name, FDB_MAX_DB_NAME_SIZE, "%s%d", "db", id);
     setupCallback(db, fn);
 }
@@ -102,12 +101,10 @@ static void fdb_txn_txn_start_and_join_invalid(void **state)
 
     db1->id = 10;
     db1->type = FDB_SINGLE_INDEX_DB;
-    db1->idx_type = DB_SINGLE_INDEX;
     setupCallback(db1, &test_callback);
 
     db2->id = 11;
     db2->type = FDB_SINGLE_INDEX_DB;
-    db2->idx_type = DB_SINGLE_INDEX;
     setupCallback(db2, &test_2_callback);
 
     assert_false(fdb_txn_join(NULL, db2));

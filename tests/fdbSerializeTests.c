@@ -1,7 +1,6 @@
 /*
  * Copyright © 2016 Shivanand Velmurugan. All Rights Reserved.
  */
-#include "fdb_private.h"
 #include "fdb/fdb.h"
 #include <stdarg.h>
 #include <stddef.h>
@@ -28,15 +27,15 @@ static int fdb_serialize_teardown(void **state)
 }
 
 static void
-check_node(const fnode n,
+check_node(fdb_node_t n,
            const char* k, size_t kl,
            const char* v, size_t vl)
 {
-    assert_non_null(n);
-    assert_string_equal(k, (char*) fnode_get_key(n));
-    assert_int_equal(kl, fnode_get_keysize(n));
-    assert_string_equal(v, (char*) fnode_get_data(n));
-    assert_int_equal(vl, fnode_get_datasize(n));
+    assert_true(fdb_node_valid(n));
+    assert_memory_equal(k, n.key, kl);
+    assert_int_equal(kl, n.key_size);
+    assert_memory_equal(v, n.data, vl);
+    assert_int_equal(vl, n.data_size);
 }
 
 static void
@@ -44,8 +43,8 @@ check_record(fdb db_inst, const char* k, const char* v)
 {
     size_t kl = strlen(k);
     size_t vl = strlen(v);
-    fnode n = fdb_find(db_inst, k, kl+1);
-    check_node(n, k, kl+1, v, vl+1);
+    fdb_node_t n = fdb_find(db_inst, k, kl + 1);
+    check_node(n, k, kl + 1, v, vl + 1);
 }
 
 static void fdb_serialize_save(void **state)

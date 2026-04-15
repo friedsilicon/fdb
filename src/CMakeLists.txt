@@ -7,10 +7,12 @@ set(FDB_SOURCES
     db/db.c
     db/db_serialize.c
     txn/txn.c
+    storage/mem_backend.c
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/storage)
 include_directories(${PROJECT_SOURCE_DIR}/libdict/include)
 
 add_library(fdb SHARED ${FDB_SOURCES})

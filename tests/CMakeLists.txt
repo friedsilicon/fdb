@@ -1,6 +1,7 @@
 include(UseCMocka)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/storage)
 include_directories(${PROJECT_SOURCE_DIR}/libdict/include)
 
 add_unit_test(
@@ -8,6 +9,7 @@ add_unit_test(
     SOURCES fdbInitTests.c
             ../src/common/log.c
             ../src/db/db.c
+            ../src/storage/mem_backend.c
     LIBRARIES dict
 )
 
@@ -16,6 +18,7 @@ add_unit_test(
     SOURCES fdbOpsTests.c
             ../src/common/log.c
             ../src/db/db.c
+            ../src/storage/mem_backend.c
     LIBRARIES dict
 )
 
@@ -25,6 +28,7 @@ add_unit_test(
             ../src/common/log.c
             ../src/db/db.c
             ../src/txn/txn.c
+            ../src/storage/mem_backend.c
     LIBRARIES dict
 )
 
@@ -35,5 +39,6 @@ add_unit_test(
             ../src/db/db.c
             ../src/db/db_serialize.c
             ../src/txn/txn.c
+            ../src/storage/mem_backend.c
     LIBRARIES dict
 )
