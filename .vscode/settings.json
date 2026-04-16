@@ -1,7 +1,7 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-    "cmake.buildDirectory": "${workspaceRoot}/../vsc-build",
-    "cmake.installPrefix": "${workspaceRoot}/../vsc-install",
+    "cmake.buildDirectory": "${workspaceRoot}/build",
+    "cmake.installPrefix": "${workspaceRoot}/install",
     "cmake.generator": "Ninja",
     "cmake.configureEnvironment": {},
     "cmake.configureArgs": [

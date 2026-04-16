@@ -1,5 +1,8 @@
 build/
-build-coverage/
+build-*/
+install/
+install-*/
+
 .kdev4/
 *.kdev4
 tags
