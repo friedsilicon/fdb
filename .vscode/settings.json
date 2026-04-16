@@ -19,5 +19,15 @@
         "typeinfo": "cpp",
         "skiplist.h": "c",
         "fdb_hexdump.h": "c"
+    },
+    "chat.mcp.serverSampling": {
+        "fdb/.vscode/mcp.json: trello": {
+            "allowedModels": [
+                "copilot/auto",
+                "copilot/gpt-4.1",
+                "copilotcli/gpt-4.1",
+                "copilot/gpt-4o"
+            ]
+        }
     }
 }
