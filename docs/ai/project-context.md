@@ -14,14 +14,17 @@ change.
 - Persistence helpers live in `src/db/db_serialize.c`.
 - Transaction coordination code lives in `src/txn/txn.c`.
 - Unit tests are C tests using CMocka in `tests/*.c`.
+- See [ROADMAP.md](../../ROADMAP.md) for priorities and release milestones.
 
 ## Build And Test
 
-Use CMake to configure and Make to build:
+Initialize submodules, then configure, build, and test with CMake:
 
 ```sh
+git submodule update --init --recursive
 cmake -S . -B build -DWITH_TESTS=ON
-make -C build
+cmake --build build
+ctest --test-dir build --output-on-failure
 ```
 
 Useful direct test commands:
@@ -36,10 +39,12 @@ Useful direct test commands:
 
 Notes:
 
-- `ctest --output-on-failure` may be less reliable than running the built test
-  binaries directly in some sandboxed environments.
-- The top-level repo does not currently provide a root `Makefile`; `make -C build`
-  is the expected Make-based workflow after CMake configure.
+- CMocka must be installed and discoverable through CMake. The current build
+  looks for it even with `WITH_TESTS=OFF`.
+- There is no root `Makefile`. `make -C build` also works when CMake uses the
+  Makefiles generator; `cmake --build build` works across generators.
+- `libdict/` and `cmake_modules/` are Git submodules. Inspect their status before
+  editing them; changes there belong to separate repositories.
 
 ## Current API Shape
 
@@ -66,12 +71,32 @@ Notes:
 - `fdb_init()` uses `fdb_mem_backend()` by default.
 - Keep backend-facing code out of the public headers unless the API is meant
   for external consumers.
+- `fdb_init_with_storage()` is public, but its operations table is internal;
+  external backend support is not yet a complete installed API.
 - `src/db/db.c` should remain storage-backend-agnostic and avoid direct
   `libdict` calls.
 
+## Current Limitations
+
+- Transaction callbacks on normal database handles are stubs. Commit/abort do
+  not provide storage isolation or rollback.
+- Save/load is a raw snapshot format, not crash-safe persistence. It currently
+  has incomplete error handling and writes native-endian lengths.
+- The memory backend's lookup comparator does not safely honor arbitrary byte
+  keys. Its size limits are assertions: keys below 64 bytes, values at most
+  1024 bytes. Treat these as defects to fix, not stable API guarantees.
+- No thread-safety guarantee exists. Node lifetime rules do not establish that
+  iterators survive mutations or database destruction.
+
 ## Tests And Expectations
 
-- Prefer updating or adding CMocka tests in `tests/*.c` when behavior changes.
+- Tests are P0. Follow TDD wherever practical: add a failing behavioral test,
+  run it and confirm the expected failure, implement the smallest fix, then
+  refactor with tests passing. Document exceptions when test-first is impractical.
+- Use CMocka tests in `tests/*.c` for the current C implementation. Prefer public
+  API assertions that remain useful across backend changes or a language migration.
+- Cover failure paths with allocation/I/O fault injection and verify that failed
+  operations preserve data. Callback counts alone do not prove transaction semantics.
 - The legacy C++ test files were removed and should not be reintroduced unless
   the test framework strategy changes deliberately.
 - When changing storage behavior, cover insert, update, remove, iteration, and

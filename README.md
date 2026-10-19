@@ -15,6 +15,8 @@ format.
 - Basic transaction coordinator scaffolding
 - Save/load support for database contents
 
+See [ROADMAP.md](ROADMAP.md) for priorities and release milestones.
+
 ## Build
 
 FDB uses CMake. A typical out-of-tree build looks like this:
