@@ -14,7 +14,11 @@ the smallest fix, then refactor with tests passing. Apply this throughout the
 roadmap, including any language migration; document exceptions when a meaningful
 failing test is impractical.
 
-- [ ] Start with public-API regressions for binary keys and size boundaries.
+- [x] Check libdict upstream: pin `897feb1` includes upstream `d2f32ed` plus
+  three CMake commits; no newer upstream revision found on October 19, 2026.
+- [ ] Before any dependency bump, baseline tests and known failures, review the
+  target revision, preserve FDB build integration, and rerun the same tests.
+- [ ] Expand public-API regressions for binary keys and size boundaries.
 - [ ] Add allocation and I/O fault injection to verify failure atomicity.
 - [ ] Test snapshot corruption and real transaction rollback before implementing fixes.
 - [ ] Resolve sanitizer timeouts; gate changes on Debug/Release and ASan/UBSan CI.
