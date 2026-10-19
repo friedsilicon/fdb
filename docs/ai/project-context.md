@@ -104,6 +104,16 @@ Notes:
 
 ## Editing Guardrails
 
+- Work down `ROADMAP.md` from P0. Make a separate, thematic commit for each
+  completed item; split larger items into independently reviewable changes.
+- Target at most roughly 1,000 changed lines per commit (additions + deletions).
+  Keep any single review unit below 3,000 changed lines. Stop and request human
+  review and design decisions before exceeding that limit; do not hide a larger
+  inseparable change across small commits.
+- Include regression tests with their fix after observing the expected failure.
+  Keep committed checkpoints passing and record validation in progress updates.
+- Notify the user when a design choice or review is needed. Continue independent
+  authorized work while awaiting input; do not invent an answer to a pending decision.
 - Preserve existing local changes unless the user explicitly asks to revert.
 - Prefer minimal, targeted patches over broad rewrites.
 - Keep comments sparse and high-signal.
