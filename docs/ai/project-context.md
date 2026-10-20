@@ -6,7 +6,8 @@ change.
 
 Read [DESIGN.md](../../DESIGN.md) before changing implementation. Its architectural
 requirements govern the roadmap; identify affected requirements and surface
-missing decisions before coding. Implementation is paused for design discussion.
+missing decisions before coding. Small P0 changes within settled contracts are
+authorized; unresolved architectural choices still require review.
 
 ## Project Summary
 

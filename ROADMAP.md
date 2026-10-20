@@ -8,7 +8,7 @@ Follow [DESIGN.md](DESIGN.md) for architectural requirements. Zig migration is
 deferred; continue with C.
 
 Current state: in-memory CRUD and iteration, basic snapshots, transaction
-scaffolding. All 30 existing tests pass; correctness gaps remain and sanitizer
+scaffolding. The original 30 tests pass; correctness gaps remain and sanitizer
 validation is unresolved. Complete the milestones below in order.
 
 ## Design decisions
@@ -47,6 +47,9 @@ failing test is impractical.
 - [ ] Before any dependency bump, baseline tests and known failures, review the
   target revision, preserve FDB build integration, and rerun the same tests.
 - [ ] Expand public-API regressions for binary keys and size boundaries.
+- [x] Protect copied input ownership and adjacent key/value bytes across insert,
+  growth, and shrink. These characterize existing behavior (no production fix
+  or red phase); they do not establish portable headers or single-allocation use.
 - [ ] Test contiguous layout, relocation, and portable record encoding against
   the agreed design before changing record representation.
 - [ ] Verify mapped records after close/reopen and mapping at a different address,

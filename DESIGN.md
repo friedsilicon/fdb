@@ -74,5 +74,6 @@ intended behavior, not a claim about RDB's internal implementation.
   directions do not settle the open implementation contracts listed above.
 - Follow TDD where practical. Behavioral tests alone do not establish layout,
   relocation, or allocation-policy compliance; test those properties explicitly.
-- Follow the commit and review limits in the shared agent guide. Implementation
-  remains paused while these design decisions are being settled.
+- Follow the commit and review limits in the shared agent guide. Small P0 changes
+  within settled contracts may proceed; unresolved design decisions gate only
+  their dependent implementation.

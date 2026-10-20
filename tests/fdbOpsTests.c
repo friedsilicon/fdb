@@ -135,6 +135,64 @@ static void fdb_ops_update_nonexistent(void **state)
     fdb_deinit(db);
 }
 
+static void fdb_ops_insert_copies_inputs(void **state)
+{
+    (void)state;
+    fdb db = fdb_init("copy-insert");
+    char key[] = "record";
+    char value[] = { 'a', '\0', (char)0xff, 'b' };
+    const char expected[] = { 'a', '\0', (char)0xff, 'b' };
+    assert_non_null(db);
+
+    assert_true(fdb_insert(db, key, sizeof(key), value, sizeof(value)));
+    memset(key, 'x', sizeof(key));
+    memset(value, 0, sizeof(value));
+    check_node(fdb_find(db, "record", sizeof("record")),
+               "record", sizeof("record"), expected, sizeof(expected));
+    fdb_deinit(db);
+}
+
+static void fdb_ops_update_copies_inputs(void **state)
+{
+    (void)state;
+    fdb db = fdb_init("copy-update");
+    char key[] = "record";
+    char value[] = { 'a', '\0', (char)0xff, 'b' };
+    const char expected[] = { 'a', '\0', (char)0xff, 'b' };
+    assert_non_null(db);
+
+    assert_true(fdb_insert(db, "record", sizeof("record"), "old", sizeof("old")));
+    assert_true(fdb_update(db, key, sizeof(key), value, sizeof(value)));
+    memset(key, 'x', sizeof(key));
+    memset(value, 0, sizeof(value));
+    check_node(fdb_find(db, "record", sizeof("record")),
+               "record", sizeof("record"), expected, sizeof(expected));
+    fdb_deinit(db);
+}
+
+static void check_contiguous_record(fdb db, const char* value)
+{
+    fdb_node_t node = fdb_find(db, "record", sizeof("record"));
+    check_node(node, "record", sizeof("record"), value, strlen(value) + 1);
+    assert_ptr_equal((const char*)node.key + node.key_size, node.data);
+}
+
+static void fdb_ops_record_stays_contiguous(void **state)
+{
+    (void)state;
+    fdb db = fdb_init("contiguous-record");
+    assert_non_null(db);
+
+    assert_true(fdb_insert(db, "record", sizeof("record"), "old", sizeof("old")));
+    check_contiguous_record(db, "old");
+    assert_true(fdb_update(db, "record", sizeof("record"),
+                           "longer replacement", sizeof("longer replacement")));
+    check_contiguous_record(db, "longer replacement");
+    assert_true(fdb_update(db, "record", sizeof("record"), "x", sizeof("x")));
+    check_contiguous_record(db, "x");
+    fdb_deinit(db);
+}
+
 static void fdb_ops_remove(void **state)
 {
     (void) state;
@@ -277,6 +335,9 @@ int main(void)
         cmocka_unit_test(fdb_ops_update_larger_data),
         cmocka_unit_test(fdb_ops_update_smaller_data),
         cmocka_unit_test(fdb_ops_update_nonexistent),
+        cmocka_unit_test(fdb_ops_insert_copies_inputs),
+        cmocka_unit_test(fdb_ops_update_copies_inputs),
+        cmocka_unit_test(fdb_ops_record_stays_contiguous),
         cmocka_unit_test(fdb_ops_remove),
         cmocka_unit_test(fdb_ops_remove_then_reinsert),
         cmocka_unit_test(fdb_ops_remove_nonexistent),
