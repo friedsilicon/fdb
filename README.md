@@ -10,6 +10,7 @@ format.
 
 - C99 API
 - In-memory storage backend
+- Explicit-length binary keys and values
 - Borrowed node-view API via `fdb_node_t`
 - Forward iteration and traversal helpers
 - Basic transaction coordinator scaffolding
@@ -35,6 +36,8 @@ With `WITH_TESTS=ON`, the build produces these test binaries:
 
 - `build/bin/test-fdb-init`
 - `build/bin/test-fdb-ops`
+- `build/bin/test-fdb-binary-keys`
+- `build/bin/test-dict-lookup`
 - `build/bin/test-fdb-txn`
 - `build/bin/test-fdb-serialize`
 
@@ -43,6 +46,8 @@ You can run them directly:
 ```sh
 ./build/bin/test-fdb-init
 ./build/bin/test-fdb-ops
+./build/bin/test-fdb-binary-keys
+./build/bin/test-dict-lookup
 ./build/bin/test-fdb-txn
 ./build/bin/test-fdb-serialize
 ```
@@ -54,12 +59,15 @@ cd build
 ctest --output-on-failure
 ```
 
-Unit tests use CMocka via CMake.
+FDB unit tests use CMocka via CMake. The focused libdict lookup test is standalone.
 
 ## Example
 
 String keys and values should be inserted with the intended byte length. For
 NUL-terminated C strings, that usually means `strlen(value) + 1`.
+Binary keys may contain NUL bytes and need no terminator; lookup, update, and
+remove honor the supplied length. The current backend still asserts keys are
+1–63 bytes and values are at most 1024 bytes; runtime size validation is pending.
 
 ```c
 #include <stdio.h>

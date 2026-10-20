@@ -39,6 +39,8 @@ Useful direct test commands:
 ```sh
 ./build/bin/test-fdb-init
 ./build/bin/test-fdb-ops
+./build/bin/test-fdb-binary-keys
+./build/bin/test-dict-lookup
 ./build/bin/test-fdb-txn
 ./build/bin/test-fdb-serialize
 ./build/bin/simple
@@ -89,9 +91,12 @@ Notes:
   not provide storage isolation or rollback.
 - Save/load is a raw snapshot format, not crash-safe persistence. It currently
   has incomplete error handling and writes native-endian lengths.
-- The memory backend's lookup comparator does not safely honor arbitrary byte
-  keys. Its size limits are assertions: keys below 64 bytes, values at most
-  1024 bytes. Treat these as defects to fix, not stable API guarantees.
+- The memory backend honors explicit binary key lengths, but its size limits
+  remain assertions: keys below 64 bytes, values at most 1024 bytes. Treat these
+  as defects to fix, not stable API guarantees. Updates can still lose the old
+  record if tree insertion fails after removal.
+- Debug, Release, and standalone UBSan suites pass locally. ASan initialization
+  previously hung even for an empty program; ASan validation remains unresolved.
 - No thread-safety guarantee exists. Node lifetime rules do not establish that
   iterators survive mutations or database destruction.
 

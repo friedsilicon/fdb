@@ -10,7 +10,8 @@
  *
  * The dict key is a pointer to the first byte of "key bytes", which lets
  * the key comparator (key_cmp) recover the key length via the header that
- * sits immediately before it in memory.
+ * sits immediately before it in memory. Caller keys use a separate lookup
+ * comparator with an explicit length; they never undergo header recovery.
  */
 
 #include "mem_backend.h"
@@ -64,44 +65,32 @@ node_val_ptr(struct mem_node_* n)
 /* ---------------------------------------------------------------------- */
 
 static int
-key_cmp(const void* k1, const void* k2)
+key_bytes_cmp(const void* k1, size_t len1, const void* k2, size_t len2)
 {
-    if (k1 == k2) return 0;
-
-    /* Each key pointer may or may not be backed by a mem_node_ header.
-     * We detect this by checking whether the header looks valid.         */
-    const struct mem_node_header_* h1 = NULL;
-    const struct mem_node_header_* h2 = NULL;
-
-    /* Back-cast: the key pointer is content[0], header is just before.  */
-    const struct mem_node_* n1 =
-        start_add((void*)k1, struct mem_node_, content);
-    const struct mem_node_* n2 =
-        start_add((void*)k2, struct mem_node_, content);
-
-    /* A node header is valid when sizes are in range and consistent.     */
-    bool k1_node = (n1->header.key_size > 0 &&
-                    n1->header.key_size < MEM_MAX_KEY_SIZE &&
-                    n1->header.val_size <= MEM_MAX_VAL_SIZE &&
-                    n1->header.node_size ==
-                        sizeof(struct mem_node_header_) +
-                        n1->header.key_size + n1->header.val_size);
-    bool k2_node = (n2->header.key_size > 0 &&
-                    n2->header.key_size < MEM_MAX_KEY_SIZE &&
-                    n2->header.val_size <= MEM_MAX_VAL_SIZE &&
-                    n2->header.node_size ==
-                        sizeof(struct mem_node_header_) +
-                        n2->header.key_size + n2->header.val_size);
-
-    size_t len1 = k1_node ? n1->header.key_size : strlen((const char*)k1) + 1;
-    size_t len2 = k2_node ? n2->header.key_size : strlen((const char*)k2) + 1;
     size_t cmp_len = len1 < len2 ? len1 : len2;
-
     int ret = memcmp(k1, k2, cmp_len);
     if (ret != 0) return ret;
     if (len1 < len2) return -1;
     if (len1 > len2) return  1;
     return 0;
+}
+
+/* Both arguments are keys inside owned records. */
+static int
+key_cmp(const void* k1, const void* k2)
+{
+    const struct mem_node_* n1 = start_add(k1, const struct mem_node_, content);
+    const struct mem_node_* n2 = start_add(k2, const struct mem_node_, content);
+    return key_bytes_cmp(k1, n1->header.key_size, k2, n2->header.key_size);
+}
+
+static int
+lookup_cmp(const void* query, const void* stored_key)
+{
+    const fdb_node_t* view = query;
+    const struct mem_node_* node =
+        start_add(stored_key, const struct mem_node_, content);
+    return key_bytes_cmp(view->key, view->key_size, stored_key, node->header.key_size);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -151,6 +140,13 @@ node_to_view(struct mem_node_* n)
 typedef struct {
     dict* store;
 } mem_ctx_t;
+
+static void**
+mem_lookup(mem_ctx_t* ctx, const void* key, size_t size)
+{
+    const fdb_node_t query = { .key = key, .key_size = size };
+    return rb_tree_search_cmp(dict_private(ctx->store), &query, lookup_cmp);
+}
 
 /* ---------------------------------------------------------------------- */
 /* Cursor                                                                 */
@@ -210,7 +206,7 @@ mem_update(void* ctx, const void* key, size_t ksz,
     struct mem_node_* new_node = node_alloc(key, ksz, val, vsz);
     if (!new_node) return false;
 
-    dict_remove_result rem = dict_remove(c->store, key);
+    dict_remove_result rem = dict_remove(c->store, node_key_ptr(new_node));
     if (!rem.removed) {
         free(new_node);
         return false;
@@ -230,9 +226,10 @@ mem_update(void* ctx, const void* key, size_t ksz,
 static bool
 mem_remove(void* ctx, const void* key, size_t ksz)
 {
-    (void)ksz;
     mem_ctx_t* c = ctx;
-    dict_remove_result r = dict_remove(c->store, key);
+    void** slot = mem_lookup(c, key, ksz);
+    if (!slot) return false;
+    dict_remove_result r = dict_remove(c->store, node_key_ptr(*slot));
     if (!r.removed) return false;
     free(r.datum);
     return true;
@@ -241,9 +238,8 @@ mem_remove(void* ctx, const void* key, size_t ksz)
 static fdb_node_t
 mem_find(void* ctx, const void* key, size_t ksz)
 {
-    (void)ksz;
     mem_ctx_t* c = ctx;
-    void** slot = dict_search(c->store, key);
+    void** slot = mem_lookup(c, key, ksz);
     if (!slot) return FDB_NODE_INVALID;
     return node_to_view((struct mem_node_*)*slot);
 }

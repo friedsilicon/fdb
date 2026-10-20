@@ -8,8 +8,8 @@ Follow [DESIGN.md](DESIGN.md) for architectural requirements. Zig migration is
 deferred; continue with C.
 
 Current state: in-memory CRUD and iteration, basic snapshots, transaction
-scaffolding. The original 30 tests pass; correctness gaps remain and sanitizer
-validation is unresolved. Complete the milestones below in order.
+scaffolding. Debug, Release, and standalone UBSan suites pass; correctness gaps
+and ASan validation remain unresolved. Complete the milestones below in order.
 
 ## Design decisions
 
@@ -50,7 +50,11 @@ failing test is impractical.
   stored keys or allocating during lookup. Baseline and extended Debug/Release
   suites pass; a focused dependency test runs in FDB's CTest suite. The legacy
   libdict CUnit suite requires CUnit, which is not installed locally.
-- [ ] Expand public-API regressions for binary keys and size boundaries.
+- [x] Add binary-key CRUD, prefix/length, iteration, snapshot round-trip, and
+  protected-buffer regressions. All eight failed before the lookup fix and pass
+  afterward; the 63-byte existing key boundary is covered.
+- [ ] Expand size-boundary tests for rejected sizes, values, and overflow after
+  the size/error contract is reviewed.
 - [x] Protect copied input ownership and adjacent key/value bytes across insert,
   growth, and shrink. These characterize existing behavior (no production fix
   or red phase); they do not establish portable headers or single-allocation use.
@@ -68,7 +72,7 @@ failing test is impractical.
 
 ## 1. Correct core storage
 
-- [ ] Honor explicit key lengths; remove unsafe header reads and `strlen()` fallback.
+- [x] Honor explicit key lengths; remove unsafe header reads and `strlen()` fallback.
 - [ ] Validate size limits and allocation overflow at runtime.
 - [ ] Preserve existing records when updates fail to allocate.
 - [ ] Define errors, empty-value behavior, iterator lifetimes, and threading rules.

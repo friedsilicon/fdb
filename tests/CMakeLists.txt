@@ -29,6 +29,15 @@ add_unit_test(
 )
 
 add_unit_test(
+    TARGET fdb-binary-keys
+    SOURCES fdbBinaryKeyTests.c
+            ../src/common/log.c
+            ../src/db/db.c
+            ../src/storage/mem_backend.c
+    LIBRARIES dict
+)
+
+add_unit_test(
     TARGET fdb-txn
     SOURCES fdbTxnTests.c
             ../src/common/log.c

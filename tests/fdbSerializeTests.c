@@ -82,11 +82,29 @@ static void fdb_serialize_save_load(void **state)
     check_record(db, "key3", "data111");
 }
 
+static void fdb_serialize_binary_records(void **state)
+{
+    (void)state;
+    const char key[] = { 'a', '\0', (char)0xff };
+    const char value[] = { '\0', (char)0x80, 'b', '\0' };
+    assert_true(fdb_insert(db, key, sizeof(key), value, sizeof(value)));
+    assert_true(fdb_insert(db, key, 1, "prefix", sizeof("prefix")));
+    assert_true(fdb_save(db, "./fdb-serialize.bin"));
+
+    fdb_deinit(db);
+    db = fdb_init("binary-reload");
+    assert_non_null(db);
+    assert_true(fdb_load(db, "./fdb-serialize.bin"));
+    check_node(fdb_find(db, key, sizeof(key)), key, sizeof(key), value, sizeof(value));
+    check_node(fdb_find(db, key, 1), key, 1, "prefix", sizeof("prefix"));
+}
+
 int main(void)
 {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(fdb_serialize_save,      fdb_serialize_setup, fdb_serialize_teardown),
         cmocka_unit_test_setup_teardown(fdb_serialize_save_load, fdb_serialize_setup, fdb_serialize_teardown),
+        cmocka_unit_test_setup_teardown(fdb_serialize_binary_records, fdb_serialize_setup, fdb_serialize_teardown),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
