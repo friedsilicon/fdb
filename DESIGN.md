@@ -6,6 +6,11 @@ all of them. Work sequencing and undecided details belong in [ROADMAP.md](ROADMA
 Memory-mapped I/O is the primary storage goal. Design records for direct access
 in a mapped file; heap-backed operation must preserve the same default format.
 
+The target is an embedded C record database inspired by the user's experience
+with Ericsson RDB: multiple Patricia indices, private editable record copies,
+and concurrent transactions protected by subtree locks. This describes FDB's
+intended behavior, not a claim about RDB's internal implementation.
+
 ## Records and memory
 
 - Each owned record is one contiguous block: metadata, key bytes, and value bytes.
@@ -42,9 +47,22 @@ in a mapped file; heap-backed operation must preserve the same default format.
 - Keys and values are byte sequences with explicit lengths.
 - Storage backends remain separate from core orchestration and allocation policy.
 - Public node views borrow storage; document when operations invalidate them.
-- Initial transactions retain the existing API: one active transaction per
-  database, with CRUD on that handle participating. Isolation, staging, and
-  durability details require design before implementation.
+- Multiple Patricia indices reference the same logical record. Define record
+  identity, key extraction, composite-key encoding, and uniqueness before
+  implementing index maintenance; the current libdict tree is not this target.
+- Transactions edit private record copies through temporary C pointers, then
+  publish whole-record changes and affected index updates atomically. Abort
+  discards private changes. Working copies must respect the memory policy.
+- Subtree locks prevent conflicting edits while allowing independent transactions
+  to proceed concurrently. "Merge" means publishing record changes, not combining
+  competing field edits. Lock coverage across indices, acquisition/release timing,
+  tree restructuring, read visibility, and deadlock handling remain undecided.
+- The earlier one-active-transaction-per-database choice is superseded as the
+  final target. Any interim restriction and the eventual transaction API require
+  review; do not silently constrain the architecture to the existing API.
+- Editable C objects do not authorize persisting arbitrary native struct layouts
+  or pointers. Define typed access or translation consistent with the portable
+  record contract before introducing an object API.
 
 ## Change discipline
 
@@ -52,6 +70,8 @@ in a mapped file; heap-backed operation must preserve the same default format.
   verify them. Surface missing decisions and conflicts before changing code.
 - Obtain user agreement before changing record layout, allocator ownership, or
   transaction/snapshot memory strategy. Include allocation costs and failure cases.
+- Use the explicit review triggers in the shared agent guide. Accepted design
+  directions do not settle the open implementation contracts listed above.
 - Follow TDD where practical. Behavioral tests alone do not establish layout,
   relocation, or allocation-policy compliance; test those properties explicitly.
 - Follow the commit and review limits in the shared agent guide. Implementation

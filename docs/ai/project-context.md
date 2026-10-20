@@ -10,7 +10,9 @@ missing decisions before coding. Implementation is paused for design discussion.
 
 ## Project Summary
 
-- FDB is a small embeddable C key-value database.
+- FDB targets an embedded C record database with multiple Patricia indices,
+  subtree-locked concurrent transactions, and memory-mapped storage. The current
+  implementation is an in-memory key-value store, not that completed design.
 - The public API lives in `include/fdb/`.
 - The current default storage implementation is the in-memory backend in
   `src/storage/mem_backend.c`.
@@ -123,6 +125,31 @@ Notes:
 - Keep comments sparse and high-signal.
 - Match the repo's current C style and C99 assumptions.
 - Update `README.md` when user-facing build or API behavior changes.
+
+## Required Design Review
+
+Before implementing an unsettled choice or changing an agreed contract, stop the
+affected work and request review for any of the following, regardless of diff size:
+
+- Record/file layout, encoding, persistent references, or compatibility changes.
+- Allocation ownership, new allocation sites, separate record components, or
+  transaction/snapshot staging and reclamation strategies.
+- Index structure, record identity, key ordering/uniqueness, or atomic maintenance
+  of multiple indices.
+- Transaction API, subtree lock coverage/order/lifetime, tree restructuring under
+  locks, deadlock handling, isolation, or concurrent-writer restrictions.
+- Public API or borrowed-view lifetime changes; mapping growth/remapping behavior.
+- Commit durability, recovery, snapshot semantics, or disk publication ordering.
+- Weakening a design invariant or test expectation to make an implementation pass.
+- An inseparable review unit exceeding roughly 3,000 changed lines, even if split
+  across commits; aim for roughly 1,000 changed lines per thematic commit.
+
+Present a concrete proposal: the decision, recommended option and alternatives,
+affected contracts, memory/failure/concurrency consequences, and acceptance tests.
+Wait for the user's answer before dependent implementation. Record accepted
+decisions in DESIGN.md and remaining work in ROADMAP.md. Existing approval of the
+same decision suffices; routine fixes within settled contracts need no new review.
+These are agent obligations, not an automated enforcement mechanism.
 
 ## Good First Files To Inspect
 

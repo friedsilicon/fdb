@@ -1,7 +1,8 @@
 # FDB Roadmap
 
-Build a small embeddable C database centered on memory-mapped I/O, with pluggable
-storage, transactions, and eventually multiple indexes and remote caching.
+Build an embedded C record database centered on memory-mapped I/O, with multiple
+Patricia indices, private editable record copies, and subtree-locked concurrent
+transactions. Remote caching is a later extension.
 
 Follow [DESIGN.md](DESIGN.md) for architectural requirements. Zig migration is
 deferred; continue with C.
@@ -14,6 +15,10 @@ validation is unresolved. Complete the milestones below in order.
 
 - [x] Use identical, directly persistable record bytes in RAM and on disk by
   default; allow explicit translation for alternate encodings.
+- [x] Establish the RDB-inspired target: Patricia indices, private record edits,
+  and concurrent transactions protected by subtree locks, not field-level merging.
+- [ ] Define record identity, C object access/translation, index key extraction,
+  composite-key encoding, ordering, and uniqueness before index implementation.
 - [ ] Specify record field widths, byte order, alignment, index references,
   versioning, and compatibility with existing files.
 - [ ] Decide whether indexes persist in the mapping or are rebuilt on open;
@@ -22,8 +27,12 @@ validation is unresolved. Complete the milestones below in order.
 - [ ] Design the allocator interface later: ownership, alignment, exhaustion,
   reclamation, and index allocation. Preserve allocator independence meanwhile.
 - [ ] Define threading and iterator/view lifetime guarantees.
-- [ ] Define transaction staging, isolation, and durability within the agreed
-  one-active-transaction-per-database API.
+- [ ] Review the transaction API for multiple active transactions. The earlier
+  one-active-transaction-per-database decision is not the final target.
+- [ ] Define subtree lock coverage across indices, lock acquisition/release and
+  ordering, tree restructuring, deadlock handling, and read visibility.
+- [ ] Define private-copy staging, atomic record/index publication, abort,
+  reclamation, and durability; include bounded-memory exhaustion behavior.
 - [ ] Define snapshot format, merge/replacement semantics, and staging memory costs.
 
 ## P0. Tests and TDD
@@ -44,6 +53,9 @@ failing test is impractical.
   including malformed offsets and lengths.
 - [ ] Add allocation and I/O fault injection to verify failure atomicity.
 - [ ] Test snapshot corruption and real transaction rollback before implementing fixes.
+- [ ] After transaction design review, test independent concurrent updates,
+  overlapping lock coverage, secondary-index conflicts, structural tree changes,
+  and atomic record/index commit or rollback using deterministic schedules.
 - [ ] Resolve sanitizer timeouts; gate changes on Debug/Release and ASan/UBSan CI.
 - [ ] Keep public-API tests reusable across storage backends and language implementations.
 
@@ -78,20 +90,24 @@ snapshot failures preserve prior data, and consumers build without test dependen
 
 ## 3. Implement real transactions
 
-- [ ] Define transaction ownership and read visibility for one database first.
-- [ ] Stage writes; make commit publish changes and abort discard them.
+- [ ] Implement the reviewed transaction ownership, lock, and visibility contracts.
+- [ ] Stage private record copies through the selected memory policy.
+- [ ] Allow concurrent transactions on independent subtrees; protect conflicts
+  across all affected indices and structural tree changes.
+- [ ] Publish records and index changes atomically; abort discards private changes.
+- [ ] Implement the agreed deadlock prevention or detection and recovery policy.
 - [ ] Enforce state transitions, participant limits, and handle lifetimes.
 - [ ] Test rollback of inserts, updates, and deletes against actual storage.
 - [ ] Decide whether commits require durability; add logging/recovery if required.
 - [ ] Add multi-database atomicity only with a defined failure/recovery protocol.
 
-Done when commit and abort control stored data and failure tests verify the
-chosen isolation and durability guarantees.
+Done when independent transactions can proceed concurrently, conflicting work is
+protected, and failure tests verify atomic record/index updates and the chosen
+isolation and durability guarantees.
 
-## 4. Extend indexes and caching
+## 4. Extend querying and caching
 
-- [ ] Define composite-key encoding and ordering.
-- [ ] Maintain secondary indexes atomically with primary records.
+- [ ] Extend index/query capabilities beyond the reviewed transaction baseline.
 - [ ] Add a remote cache adapter with expiry, eviction, and invalidation policies.
 - [ ] Test stale data, remote failures, and index consistency.
 - [ ] Benchmark latency and memory against agreed workloads.
@@ -99,5 +115,6 @@ chosen isolation and durability guarantees.
 Before expanding scope, choose target platforms, memory budgets, and allocation
 requirements for hosted versus constrained embedded use.
 
-**Next step:** settle record representation and its verification before resuming
-implementation. Allocator-interface details can be designed later.
+**Next step:** review record representation, index identity/key semantics, and the
+transaction/locking contract before dependent implementation. Detailed allocator
+work can follow, but staging must not invent an unreviewed allocation strategy.
