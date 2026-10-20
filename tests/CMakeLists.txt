@@ -4,6 +4,12 @@ include_directories(${PROJECT_SOURCE_DIR}/src/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/storage)
 include_directories(${PROJECT_SOURCE_DIR}/libdict/include)
 
+if(WITH_TESTS)
+    add_executable(test-dict-lookup ../libdict/lookup_tests.c)
+    target_link_libraries(test-dict-lookup PRIVATE dict)
+    add_test(NAME test-dict-lookup COMMAND test-dict-lookup)
+endif()
+
 add_unit_test(
     TARGET fdb-init
     SOURCES fdbInitTests.c

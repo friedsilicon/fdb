@@ -46,6 +46,10 @@ failing test is impractical.
   three CMake commits; no newer upstream revision found on October 19, 2026.
 - [ ] Before any dependency bump, baseline tests and known failures, review the
   target revision, preserve FDB build integration, and rerun the same tests.
+- [x] Extend the libdict fork with a per-lookup RB comparator, without changing
+  stored keys or allocating during lookup. Baseline and extended Debug/Release
+  suites pass; a focused dependency test runs in FDB's CTest suite. The legacy
+  libdict CUnit suite requires CUnit, which is not installed locally.
 - [ ] Expand public-API regressions for binary keys and size boundaries.
 - [x] Protect copied input ownership and adjacent key/value bytes across insert,
   growth, and shrink. These characterize existing behavior (no production fix
