@@ -3,15 +3,30 @@
 Build a small embeddable C database with pluggable storage, reliable persistence,
 transactions, and eventually multiple indexes and remote caching.
 
+Follow [DESIGN.md](DESIGN.md) for architectural requirements. Zig migration is
+deferred; continue with C.
+
 Current state: in-memory CRUD and iteration, basic snapshots, transaction
 scaffolding. All 30 existing tests pass; correctness gaps remain and sanitizer
 validation is unresolved. Complete the milestones below in order.
+
+## Design decisions
+
+- [ ] Specify the relocatable record format, index references, and whether RAM
+  and disk use identical bytes; define versioning and compatibility.
+- [ ] Define supported key/value sizes, empty-value behavior, and growth rules.
+- [ ] Design the allocator interface later: ownership, alignment, exhaustion,
+  reclamation, and index allocation. Preserve allocator independence meanwhile.
+- [ ] Define threading and iterator/view lifetime guarantees.
+- [ ] Define transaction staging, isolation, and durability within the agreed
+  one-active-transaction-per-database API.
+- [ ] Define snapshot format, merge/replacement semantics, and staging memory costs.
 
 ## P0. Tests and TDD
 
 For each behavior change: write a failing test, confirm the failure, implement
 the smallest fix, then refactor with tests passing. Apply this throughout the
-roadmap, including any language migration; document exceptions when a meaningful
+roadmap; document exceptions when a meaningful
 failing test is impractical.
 
 - [x] Check libdict upstream: pin `897feb1` includes upstream `d2f32ed` plus
@@ -19,6 +34,8 @@ failing test is impractical.
 - [ ] Before any dependency bump, baseline tests and known failures, review the
   target revision, preserve FDB build integration, and rerun the same tests.
 - [ ] Expand public-API regressions for binary keys and size boundaries.
+- [ ] Test contiguous layout, relocation, and portable record encoding against
+  the agreed design before changing record representation.
 - [ ] Add allocation and I/O fault injection to verify failure atomicity.
 - [ ] Test snapshot corruption and real transaction rollback before implementing fixes.
 - [ ] Resolve sanitizer timeouts; gate changes on Debug/Release and ASan/UBSan CI.
@@ -73,5 +90,5 @@ chosen isolation and durability guarantees.
 Before expanding scope, choose target platforms, memory budgets, and allocation
 requirements for hosted versus constrained embedded use.
 
-**Next change:** write and run failing binary-key and bounds regression tests,
-then fix `src/storage/mem_backend.c` until they pass.
+**Next step:** settle record representation and its verification before resuming
+implementation. Allocator-interface details can be designed later.

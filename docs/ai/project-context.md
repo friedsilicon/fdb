@@ -4,6 +4,10 @@ This is the canonical shared context for AI coding assistants working in this
 repository. Keep it short, factual, and updated when project conventions
 change.
 
+Read [DESIGN.md](../../DESIGN.md) before changing implementation. Its architectural
+requirements govern the roadmap; identify affected requirements and surface
+missing decisions before coding. Implementation is paused for design discussion.
+
 ## Project Summary
 
 - FDB is a small embeddable C key-value database.
