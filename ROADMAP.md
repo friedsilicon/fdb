@@ -1,7 +1,7 @@
 # FDB Roadmap
 
-Build a small embeddable C database with pluggable storage, reliable persistence,
-transactions, and eventually multiple indexes and remote caching.
+Build a small embeddable C database centered on memory-mapped I/O, with pluggable
+storage, transactions, and eventually multiple indexes and remote caching.
 
 Follow [DESIGN.md](DESIGN.md) for architectural requirements. Zig migration is
 deferred; continue with C.
@@ -12,8 +12,12 @@ validation is unresolved. Complete the milestones below in order.
 
 ## Design decisions
 
-- [ ] Specify the relocatable record format, index references, and whether RAM
-  and disk use identical bytes; define versioning and compatibility.
+- [x] Use identical, directly persistable record bytes in RAM and on disk by
+  default; allow explicit translation for alternate encodings.
+- [ ] Specify record field widths, byte order, alignment, index references,
+  versioning, and compatibility with existing files.
+- [ ] Decide whether indexes persist in the mapping or are rebuilt on open;
+  define mapping growth, reclamation, and borrowed-view invalidation.
 - [ ] Define supported key/value sizes, empty-value behavior, and growth rules.
 - [ ] Design the allocator interface later: ownership, alignment, exhaustion,
   reclamation, and index allocation. Preserve allocator independence meanwhile.
@@ -36,6 +40,8 @@ failing test is impractical.
 - [ ] Expand public-API regressions for binary keys and size boundaries.
 - [ ] Test contiguous layout, relocation, and portable record encoding against
   the agreed design before changing record representation.
+- [ ] Verify mapped records after close/reopen and mapping at a different address,
+  including malformed offsets and lengths.
 - [ ] Add allocation and I/O fault injection to verify failure atomicity.
 - [ ] Test snapshot corruption and real transaction rollback before implementing fixes.
 - [ ] Resolve sanitizer timeouts; gate changes on Debug/Release and ASan/UBSan CI.
@@ -53,8 +59,11 @@ failing test is impractical.
 Done when arbitrary byte keys work and failed mutations preserve data, with
 regression and sanitizer checks passing.
 
-## 2. Ship reliable snapshots and embedding
+## 2. Build mapped storage and persistence
 
+- [ ] Implement mapping lifecycle and bounded record access using the default
+  portable format, without allocating a separate heap object for each record.
+- [ ] Implement the agreed index and free-space strategy for mapped storage.
 - [ ] Propagate write, flush, and close errors; atomically replace snapshot files.
 - [ ] Reject malformed input without partially changing the database.
 - [ ] Define load replacement/merge behavior and support empty snapshots.
@@ -64,8 +73,8 @@ regression and sanitizer checks passing.
 - [ ] Decide whether the backend API is public; validate its callbacks and ownership.
 - [ ] Align package versions and choose release scope and licensing.
 
-Done when failed saves preserve the previous snapshot, failed loads preserve
-database contents, and consumers build without test dependencies.
+Done when records remain readable after reopening at a different address,
+snapshot failures preserve prior data, and consumers build without test dependencies.
 
 ## 3. Implement real transactions
 

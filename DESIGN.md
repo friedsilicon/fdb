@@ -3,6 +3,9 @@
 These requirements guide implementation. The current code does not yet satisfy
 all of them. Work sequencing and undecided details belong in [ROADMAP.md](ROADMAP.md).
 
+Memory-mapped I/O is the primary storage goal. Design records for direct access
+in a mapped file; heap-backed operation must preserve the same default format.
+
 ## Records and memory
 
 - Each owned record is one contiguous block: metadata, key bytes, and value bytes.
@@ -12,7 +15,18 @@ all of them. Work sequencing and undecided details belong in [ROADMAP.md](ROADMA
   indexes referencing moved records need a defined update or handle strategy.
 - On-disk records must be portable across supported architectures. Define field
   widths, byte order, and encoding explicitly rather than dumping native structs.
-  Whether RAM and disk use identical bytes remains undecided.
+  The default record bytes in RAM and on disk are identical and directly
+  persistable. Alternate encodings may use explicit translation; normal mapped
+  access must not require materializing a separate heap record.
+- Read metadata through accessors that respect the format's byte order and
+  alignment. Keys and values remain opaque bytes; application payload encoding
+  is the application's responsibility unless a separate codec is selected.
+- Persistent references must survive mapping at another address. Define offsets
+  or stable identifiers for indexes and allocation metadata; temporary process
+  pointers must not become part of the persistent representation.
+- Direct persistability does not provide atomic commit or crash recovery by
+  itself. Mapping growth, borrowed-view invalidation, write ordering, and durable
+  commit require explicit contracts before implementation.
 - Memory-management policy must be replaceable without redefining the data
   structures. Support for heap, pool, or caller-provided memory belongs behind
   an allocation interface; its detailed design is deferred.
